@@ -1,0 +1,146 @@
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model Posyandu {
+  id        String     @id @default(uuid())
+  nama_pos  String     // e.g. "Anggrek", "Bougenfil", "Dahlia", "Lily", "Mawar", "Melati"
+  dusun     String
+  alamat    String
+  users     User[]
+  anak      Anak[]
+  ibuHamil  IbuHamil[]
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+}
+
+model User {
+  id              String           @id @default(uuid())
+  id_pos          String?
+  posyandu        Posyandu?        @relation(fields: [id_pos], references: [id], onDelete: SetNull)
+  nama            String
+  username        String           @unique
+  no_hp           String?          @unique
+  password_hash   String
+  role            String           @default("kader") // "kader", "koordinator", "admin"
+  pengukuranAnak  PengukuranAnak[] @relation("UserInputAnak")
+  pengukuranBumil PengukuranBumil[] @relation("UserInputBumil")
+  prepostResults  PelatihanPrePost[]
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+}
+
+model OtpVerification {
+  id         String   @id @default(uuid())
+  no_hp      String
+  code       String
+  expires_at DateTime
+  created_at DateTime @default(now())
+}
+
+model Anak {
+  id               String           @id @default(uuid())
+  id_pos           String
+  posyandu         Posyandu         @relation(fields: [id_pos], references: [id], onDelete: Cascade)
+  nik              String           @unique
+  no_kk            String?
+  nama_anak        String
+  jenis_kelamin    String           // "L", "P"
+  tanggal_lahir    DateTime
+  nama_ayah        String?
+  nama_ibu         String
+  no_hp_ortu       String?
+  alamat           String
+  berat_lahir_gram Float
+  panjang_lahir_cm Float
+  pengukuran       PengukuranAnak[]
+  imunisasi        Imunisasi[]
+  pmt              PmtBalita[]
+  created_at       DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+}
+
+model PengukuranAnak {
+  id            String   @id @default(uuid())
+  id_anak       String
+  anak          Anak     @relation(fields: [id_anak], references: [id], onDelete: Cascade)
+  id_user_input String
+  userInput     User     @relation("UserInputAnak", fields: [id_user_input], references: [id], onDelete: Restrict)
+  tanggal_ukur  DateTime
+  berat_kg      Float
+  tinggi_cm     Float
+  cara_ukur     String   @default("telentang") // "berdiri", "telentang"
+  lila_cm       Float?
+  umur_bulan    Int
+  status_bbu    String   // "Gizi Buruk", "Gizi Kurang", "Normal", "Risiko Gizi Lebih"
+  status_tbu    String   // "Sangat Pendek", "Pendek", "Normal", "Tinggi"
+  status_bbtb   String   // "Gizi Buruk", "Gizi Kurang", "Normal", "Berisiko Gizi Lebih", "Obesitas"
+  created_at    DateTime @default(now())
+}
+
+model IbuHamil {
+  id            String            @id @default(uuid())
+  id_pos        String
+  posyandu      Posyandu          @relation(fields: [id_pos], references: [id], onDelete: Cascade)
+  nik           String            @unique
+  nama          String
+  tanggal_lahir DateTime
+  nama_suami    String
+  alamat        String
+  kehamilan_ke  Int               @default(1)
+  hpht          DateTime
+  pengukuran    PengukuranBumil[]
+  created_at    DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+}
+
+model PengukuranBumil {
+  id                    String   @id @default(uuid())
+  id_bumil              String
+  ibuHamil              IbuHamil @relation(fields: [id_bumil], references: [id], onDelete: Cascade)
+  id_user_input         String
+  userInput             User     @relation("UserInputBumil", fields: [id_user_input], references: [id], onDelete: Restrict)
+  tanggal_periksa       DateTime
+  usia_kehamilan_minggu Int
+  berat_kg              Float
+  tinggi_cm             Float
+  lila_cm               Float
+  tekanan_darah         String   // e.g. "120/80"
+  status_gizi_bumil     String   // "Normal" or "KEK"
+  created_at            DateTime @default(now())
+}
+
+model Imunisasi {
+  id              String   @id @default(uuid())
+  id_anak         String
+  anak            Anak     @relation(fields: [id_anak], references: [id], onDelete: Cascade)
+  jenis_imunisasi String   // e.g. "BCG", "DPT 1", "Polio 1", "Campak"
+  tanggal         DateTime
+  created_at      DateTime @default(now())
+}
+
+model PmtBalita {
+  id              String    @id @default(uuid())
+  id_anak         String
+  anak            Anak      @relation(fields: [id_anak], references: [id], onDelete: Cascade)
+  tanggal_mulai   DateTime
+  tanggal_selesai DateTime?
+  hasil_bb_akhir  Float?
+  catatan         String?
+  created_at      DateTime  @default(now())
+}
+
+model PelatihanPrePost {
+  id              String   @id @default(uuid())
+  id_user         String
+  user            User     @relation(fields: [id_user], references: [id], onDelete: Cascade)
+  jenis_pelatihan String   // e.g. "Pengukuran Antropometri 2026", "Edukasi Gizi & PMT"
+  skor_pretest    Float
+  skor_posttest   Float
+  tanggal         DateTime @default(now())
+}
