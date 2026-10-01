@@ -1,0 +1,7 @@
+node_modules
+.next
+*.log
+dev.db
+dev.db-journal
+.env
+_backup_laravel
