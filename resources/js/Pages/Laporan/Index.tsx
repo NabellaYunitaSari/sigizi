@@ -5,7 +5,6 @@ import {
   FileSpreadsheet,
   Download,
   Printer,
-  Sparkles,
 } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { UserSession } from '../../Components/Navbar';
@@ -91,10 +90,6 @@ export default function Index({ posyandus = [], children = [], bumilList = [] }:
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
-            <div className="flex items-center space-x-2 text-xs font-semibold text-brand-600 uppercase tracking-wider mb-1">
-              <Sparkles className="w-3.5 h-3.5" />
-              <span>Modul Pelaporan • Desa Sukomalo</span>
-            </div>
             <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
               Laporan & Rekapitulasi Data
             </h1>

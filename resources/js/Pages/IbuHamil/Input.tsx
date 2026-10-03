@@ -6,7 +6,6 @@ import {
   CheckCircle2,
   Heart,
   AlertCircle,
-  Sparkles,
 } from 'lucide-react';
 import { classifyBumilStatus, getStatusBadgeColor } from '../../lib/statusGizi';
 import { UserSession } from '../../Components/Navbar';
@@ -76,7 +75,7 @@ export default function Input({ bumil }: BumilInputProps) {
       <div className="max-w-2xl mx-auto space-y-6">
         <Link
           href={`/ibu-hamil/${bumil.id}`}
-          className="inline-flex items-center space-x-1.5 text-xs font-semibold text-slate-500 hover:text-rose-600 min-h-[44px]"
+          className="inline-flex items-center space-x-1.5 text-xs font-semibold text-slate-500 hover:text-brand-600 min-h-[44px]"
         >
           <ArrowLeft className="w-4 h-4" />
           <span>Kembali ke Detail {bumil.nama}</span>
@@ -84,10 +83,6 @@ export default function Input({ bumil }: BumilInputProps) {
 
         <div className="bg-white rounded-3xl border border-slate-200/80 shadow-xl p-6 sm:p-8 space-y-6">
           <div className="border-b border-slate-100 pb-4">
-            <div className="flex items-center space-x-2 text-xs font-semibold text-rose-600 uppercase tracking-wider mb-0.5">
-              <Sparkles className="w-3.5 h-3.5" />
-              <span>Pemeriksaan Kesehatan Ibu Hamil</span>
-            </div>
             <h1 className="text-xl font-extrabold text-slate-900 tracking-tight">
               {bumil.nama}
             </h1>
@@ -112,7 +107,7 @@ export default function Input({ bumil }: BumilInputProps) {
                   required
                   value={tanggalPeriksa}
                   onChange={(e) => setTanggalPeriksa(e.target.value)}
-                  className="w-full px-4 py-3 rounded-2xl border border-slate-200 text-sm focus:ring-2 focus:ring-rose-500 focus:outline-none min-h-[48px]"
+                  className="w-full px-4 py-3 rounded-2xl border border-slate-200 text-sm focus:ring-2 focus:ring-brand-500 focus:outline-none min-h-[48px]"
                 />
               </div>
 
@@ -125,7 +120,7 @@ export default function Input({ bumil }: BumilInputProps) {
                   max="44"
                   value={usiaKehamilan}
                   onChange={(e) => setUsiaKehamilan(e.target.value)}
-                  className="w-full px-4 py-3 rounded-2xl border border-slate-200 text-sm focus:ring-2 focus:ring-rose-500 focus:outline-none min-h-[48px]"
+                  className="w-full px-4 py-3 rounded-2xl border border-slate-200 text-sm focus:ring-2 focus:ring-brand-500 focus:outline-none min-h-[48px]"
                 />
               </div>
             </div>
@@ -140,7 +135,7 @@ export default function Input({ bumil }: BumilInputProps) {
                   value={beratKg}
                   onChange={(e) => setBeratKg(e.target.value)}
                   placeholder="Contoh: 62.5"
-                  className="w-full px-4 py-3 rounded-2xl border border-slate-200 text-sm focus:ring-2 focus:ring-rose-500 focus:outline-none min-h-[48px]"
+                  className="w-full px-4 py-3 rounded-2xl border border-slate-200 text-sm focus:ring-2 focus:ring-brand-500 focus:outline-none min-h-[48px]"
                 />
               </div>
 
@@ -153,7 +148,7 @@ export default function Input({ bumil }: BumilInputProps) {
                   value={tinggiCm}
                   onChange={(e) => setTinggiCm(e.target.value)}
                   placeholder="Contoh: 156.0"
-                  className="w-full px-4 py-3 rounded-2xl border border-slate-200 text-sm focus:ring-2 focus:ring-rose-500 focus:outline-none min-h-[48px]"
+                  className="w-full px-4 py-3 rounded-2xl border border-slate-200 text-sm focus:ring-2 focus:ring-brand-500 focus:outline-none min-h-[48px]"
                 />
               </div>
             </div>
@@ -168,7 +163,7 @@ export default function Input({ bumil }: BumilInputProps) {
                   value={lilaCm}
                   onChange={(e) => setLilaCm(e.target.value)}
                   placeholder="Contoh: 24.0"
-                  className="w-full px-4 py-3 rounded-2xl border border-slate-200 text-sm focus:ring-2 focus:ring-rose-500 focus:outline-none min-h-[48px]"
+                  className="w-full px-4 py-3 rounded-2xl border border-slate-200 text-sm focus:ring-2 focus:ring-brand-500 focus:outline-none min-h-[48px]"
                 />
                 <span className="text-[10px] text-slate-400 mt-1 block">&lt; 23.5 cm terdeteksi KEK (Kekurangan Energi Kronis)</span>
               </div>
@@ -181,7 +176,7 @@ export default function Input({ bumil }: BumilInputProps) {
                   value={tekananDarah}
                   onChange={(e) => setTekananDarah(e.target.value)}
                   placeholder="Contoh: 120/80"
-                  className="w-full px-4 py-3 rounded-2xl border border-slate-200 text-sm focus:ring-2 focus:ring-rose-500 focus:outline-none min-h-[48px]"
+                  className="w-full px-4 py-3 rounded-2xl border border-slate-200 text-sm focus:ring-2 focus:ring-brand-500 focus:outline-none min-h-[48px]"
                 />
               </div>
             </div>
@@ -210,7 +205,7 @@ export default function Input({ bumil }: BumilInputProps) {
               <button
                 type="submit"
                 disabled={submitting}
-                className="px-7 py-3 bg-rose-600 hover:bg-rose-700 text-white font-semibold text-sm rounded-2xl shadow-md shadow-rose-600/20 min-h-[48px] flex items-center space-x-2 disabled:opacity-60"
+                className="px-7 py-3 bg-brand-600 hover:bg-brand-700 text-white font-semibold text-sm rounded-2xl shadow-md shadow-brand-600/20 min-h-[48px] flex items-center space-x-2 disabled:opacity-60"
               >
                 {submitting ? (
                   <span>Menyimpan...</span>

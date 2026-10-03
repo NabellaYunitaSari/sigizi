@@ -8,7 +8,9 @@ import {
   Users,
   Building2,
   ChevronRight,
-  Sparkles,
+  Syringe,
+  Pill,
+  Scale,
 } from 'lucide-react';
 import { UserSession } from './Navbar';
 
@@ -62,6 +64,21 @@ export default function Sidebar({ user: propUser }: SidebarProps) {
       icon: Heart,
     },
     {
+      label: 'Pengukuran Balita',
+      href: '/pengukuran',
+      icon: Scale,
+    },
+    {
+      label: 'Imunisasi Balita',
+      href: '/imunisasi',
+      icon: Syringe,
+    },
+    {
+      label: 'Vitamin Balita',
+      href: '/vitamin',
+      icon: Pill,
+    },
+    {
       label: 'Laporan & Rekap',
       href: '/laporan',
       icon: FileSpreadsheet,
@@ -81,10 +98,6 @@ export default function Sidebar({ user: propUser }: SidebarProps) {
     <aside className="hidden md:flex flex-col w-64 bg-white border-r border-slate-200/80 shrink-0 min-h-[calc(100vh-65px)] p-4 space-y-6">
       {/* Posyandu Badge Info */}
       <div className="bg-gradient-to-br from-brand-50 to-teal-50/50 p-3.5 rounded-2xl border border-brand-100/80">
-        <div className="flex items-center space-x-2 text-xs font-semibold text-brand-700 uppercase tracking-wider mb-1">
-          <Sparkles className="w-3.5 h-3.5 text-brand-600" />
-          <span>{user.role === 'kader' ? 'Posyandu Anda' : 'Desa Sukomalo'}</span>
-        </div>
         <div className="font-bold text-slate-800 text-sm">
           {user.role === 'kader' ? `Pos ${user.nama_pos || ''}` : '6 Posyandu Aktif'}
         </div>

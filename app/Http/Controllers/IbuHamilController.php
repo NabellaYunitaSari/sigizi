@@ -25,11 +25,11 @@ class IbuHamilController extends Controller
 
         if ($user && $user->role === 'kader' && $user->id_pos) {
             $query->where('id_pos', $user->id_pos);
-        } elseif (!empty($posyanduId)) {
+        } elseif (! empty($posyanduId)) {
             $query->where('id_pos', $posyanduId);
         }
 
-        if (!empty($search)) {
+        if (! empty($search)) {
             $query->where(function ($q) use ($search) {
                 $q->where('nama', 'like', "%{$search}%")
                     ->orWhere('nik', 'like', "%{$search}%")
@@ -58,10 +58,11 @@ class IbuHamilController extends Controller
             $q->orderBy('tanggal_periksa', 'desc')->with('userInput');
         }])->find($id);
 
-        if (!$bumil) {
+        if (! $bumil) {
             if ($request->wantsJson()) {
                 return response()->json(['error' => 'Ibu hamil tidak ditemukan'], 404);
             }
+
             return redirect()->route('ibu-hamil.index');
         }
 
@@ -69,6 +70,7 @@ class IbuHamilController extends Controller
             if ($request->wantsJson()) {
                 return response()->json(['error' => 'Akses ditolak'], 403);
             }
+
             return redirect()->route('ibu-hamil.index');
         }
 
@@ -119,12 +121,45 @@ class IbuHamilController extends Controller
         return redirect()->route('ibu-hamil.index');
     }
 
+    public function update(Request $request, string $id)
+    {
+        $bumil = IbuHamil::findOrFail($id);
+
+        $request->validate([
+            'nik' => 'required|string|unique:ibu_hamils,nik,'.$id,
+            'nama' => 'required|string',
+            'tanggal_lahir' => 'required|date',
+            'nama_suami' => 'required|string',
+            'alamat' => 'required|string',
+            'hpht' => 'required|date',
+        ]);
+
+        $bumil->update([
+            'nik' => trim($request->nik),
+            'nama' => trim($request->nama),
+            'tanggal_lahir' => $request->tanggal_lahir,
+            'nama_suami' => trim($request->nama_suami),
+            'alamat' => trim($request->alamat),
+            'kehamilan_ke' => (int) ($request->input('kehamilan_ke') ?? $bumil->kehamilan_ke),
+            'hpht' => $request->hpht,
+            'id_pos' => $request->input('id_pos', $bumil->id_pos),
+        ]);
+
+        if ($request->wantsJson()) {
+            return response()->json(['success' => true, 'data' => $bumil]);
+        }
+
+        return redirect()->back()->with('message', 'Data ibu hamil berhasil diperbarui');
+    }
+
     public function inputPage(Request $request, string $id)
     {
         $user = Auth::user();
         $bumil = IbuHamil::with('posyandu')->find($id);
 
-        if (!$bumil) return redirect()->route('ibu-hamil.index');
+        if (! $bumil) {
+            return redirect()->route('ibu-hamil.index');
+        }
 
         if ($user && $user->role === 'kader' && $bumil->id_pos !== $user->id_pos) {
             return redirect()->route('ibu-hamil.index');
@@ -140,7 +175,7 @@ class IbuHamilController extends Controller
         $user = Auth::user();
         $bumil = IbuHamil::find($id);
 
-        if (!$bumil) {
+        if (! $bumil) {
             return response()->json(['error' => 'Ibu hamil tidak ditemukan'], 404);
         }
 

@@ -6,7 +6,6 @@ import {
   Heart,
   BarChart3,
   ArrowRight,
-  Sparkles,
   MapPin,
   CheckCircle2,
   Users,
@@ -68,11 +67,6 @@ export default function Home() {
       {/* Hero Section */}
       <section className="relative px-4 pt-12 pb-16 lg:pt-20 lg:pb-24 max-w-7xl mx-auto w-full">
         <div className="text-center max-w-3xl mx-auto space-y-6">
-          <div className="inline-flex items-center space-x-2 px-4 py-1.5 rounded-full bg-brand-50 border border-brand-200/80 text-brand-700 text-xs font-semibold uppercase tracking-wide">
-            <Sparkles className="w-3.5 h-3.5 text-brand-600" />
-            <span>Prototipe Penelitian & Pengabdian Masyarakat</span>
-          </div>
-
           <h1 className="text-3xl sm:text-5xl font-black text-slate-900 tracking-tight leading-tight sm:leading-none">
             Digitalisasi Pencatatan Gizi & Posyandu <span className="bg-clip-text text-transparent bg-gradient-to-r from-brand-600 to-teal-500">Desa Sukomalo</span>
           </h1>
@@ -226,8 +220,8 @@ export default function Home() {
 
       {/* Footer */}
       <footer className="mt-auto border-t border-slate-200 bg-white py-6 px-4 text-center text-xs text-slate-500 space-y-1">
-        <p className="font-medium text-slate-700">SIGIZI Desa Sukomalo • Prototipe Penelitian Pengabdian Masyarakat 2026</p>
-        <p>Dikembangkan dengan Laravel, Inertia.js, React, Tailwind CSS, dan Recharts</p>
+        <p className="font-semibold text-slate-700">SIGIZI Desa Sukomalo</p>
+        <p className="text-slate-400 text-[11px]">Sistem Informasi Pencatatan Gizi & Monitoring Posyandu</p>
       </footer>
     </div>
   );

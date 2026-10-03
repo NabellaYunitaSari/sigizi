@@ -38,7 +38,6 @@ export default function Navbar({ user: propUser }: NavbarProps) {
             <div className="font-bold text-slate-900 tracking-tight text-lg flex items-center gap-1.5">
               SIGIZI <span className="text-brand-600">Desa</span>
             </div>
-            <div className="text-[11px] text-slate-500 font-medium">Sukomalo • 6 Posyandu</div>
           </div>
         </Link>
 

@@ -11,6 +11,7 @@ class Anak extends Model
     use HasFactory, HasUuids;
 
     protected $table = 'anaks';
+
     protected $fillable = [
         'id',
         'id_pos',
@@ -45,5 +46,10 @@ class Anak extends Model
     public function pmt()
     {
         return $this->hasMany(PmtBalita::class, 'id_anak');
+    }
+
+    public function vitamin()
+    {
+        return $this->hasMany(Vitamin::class, 'id_anak');
     }
 }

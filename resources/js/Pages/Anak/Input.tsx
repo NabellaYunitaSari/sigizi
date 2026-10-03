@@ -6,7 +6,6 @@ import {
   CheckCircle2,
   ChevronRight,
   ChevronLeft,
-  Sparkles,
   Scale,
   Ruler,
   AlertCircle,
@@ -95,10 +94,6 @@ export default function Input({ child, nextChildId }: InputProps) {
           {/* Header Info */}
           <div className="flex items-center justify-between border-b border-slate-100 pb-4">
             <div>
-              <div className="flex items-center space-x-2 text-xs font-semibold text-brand-600 uppercase tracking-wider mb-0.5">
-                <Sparkles className="w-3.5 h-3.5" />
-                <span>Wizard Penimbangan Posyandu</span>
-              </div>
               <h1 className="text-xl font-extrabold text-slate-900 tracking-tight">
                 {child.nama_anak}
               </h1>

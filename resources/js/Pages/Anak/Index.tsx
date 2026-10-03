@@ -7,8 +7,8 @@ import {
   Plus,
   ChevronRight,
   X,
-  Sparkles,
   Building2,
+  Edit2,
 } from 'lucide-react';
 import { getStatusBadgeColor, calculateAgeInMonths } from '../../lib/statusGizi';
 import { UserSession } from '../../Components/Navbar';
@@ -49,6 +49,7 @@ export default function Index({ initialChildren = [], posyandus = [] }: AnakInde
   const [posyanduFilter, setPosyanduFilter] = useState('');
 
   const [showAddModal, setShowAddModal] = useState(false);
+  const [editingChild, setEditingChild] = useState<ChildData | null>(null);
   const [formSubmitting, setFormSubmitting] = useState(false);
   const [formError, setFormError] = useState('');
 
@@ -66,6 +67,46 @@ export default function Index({ initialChildren = [], posyandus = [] }: AnakInde
     panjang_lahir_cm: '49',
     id_pos: user?.id_pos || '',
   });
+
+  const handleOpenAddModal = () => {
+    setEditingChild(null);
+    setFormError('');
+    setFormData({
+      nik: '',
+      no_kk: '',
+      nama_anak: '',
+      jenis_kelamin: 'L',
+      tanggal_lahir: '',
+      nama_ayah: '',
+      nama_ibu: '',
+      no_hp_ortu: '',
+      alamat: '',
+      berat_lahir_gram: '3100',
+      panjang_lahir_cm: '49',
+      id_pos: user?.id_pos || '',
+    });
+    setShowAddModal(true);
+  };
+
+  const handleOpenEditModal = (child: ChildData) => {
+    setEditingChild(child);
+    setFormError('');
+    setFormData({
+      nik: child.nik,
+      no_kk: child.no_kk || '',
+      nama_anak: child.nama_anak,
+      jenis_kelamin: child.jenis_kelamin,
+      tanggal_lahir: child.tanggal_lahir,
+      nama_ayah: child.nama_ayah || '',
+      nama_ibu: child.nama_ibu,
+      no_hp_ortu: child.no_hp_ortu || '',
+      alamat: child.alamat,
+      berat_lahir_gram: child.berat_lahir_gram ? child.berat_lahir_gram.toString() : '3100',
+      panjang_lahir_cm: child.panjang_lahir_cm ? child.panjang_lahir_cm.toString() : '49',
+      id_pos: child.id_pos || '',
+    });
+    setShowAddModal(true);
+  };
 
   const loadChildren = async (s = search, p = posyanduFilter) => {
     let url = `/api/anak?search=${encodeURIComponent(s)}`;
@@ -95,33 +136,33 @@ export default function Index({ initialChildren = [], posyandus = [] }: AnakInde
     setFormSubmitting(true);
 
     try {
-      const res = await fetch('/api/anak', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-        body: JSON.stringify(formData),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Gagal menyimpan anak baru');
+      if (editingChild) {
+        router.put(`/anak/${editingChild.id}`, formData, {
+          onSuccess: () => {
+            setShowAddModal(false);
+            setEditingChild(null);
+            loadChildren();
+          },
+          onError: (errs) => {
+            setFormError(Object.values(errs).join(', ') || 'Gagal memperbarui data balita');
+          },
+          onFinish: () => setFormSubmitting(false),
+        });
+      } else {
+        const res = await fetch('/api/anak', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+          body: JSON.stringify(formData),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Gagal menyimpan anak baru');
 
-      setShowAddModal(false);
-      loadChildren();
-      setFormData({
-        nik: '',
-        no_kk: '',
-        nama_anak: '',
-        jenis_kelamin: 'L',
-        tanggal_lahir: '',
-        nama_ayah: '',
-        nama_ibu: '',
-        no_hp_ortu: '',
-        alamat: '',
-        berat_lahir_gram: '3100',
-        panjang_lahir_cm: '49',
-        id_pos: user?.id_pos || '',
-      });
+        setShowAddModal(false);
+        loadChildren();
+        setFormSubmitting(false);
+      }
     } catch (err: any) {
       setFormError(err.message);
-    } finally {
       setFormSubmitting(false);
     }
   };
@@ -142,10 +183,6 @@ export default function Index({ initialChildren = [], posyandus = [] }: AnakInde
         {/* Page Header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
-            <div className="flex items-center space-x-2 text-xs font-semibold text-brand-600 uppercase tracking-wider mb-1">
-              <Sparkles className="w-3.5 h-3.5" />
-              <span>Modul Balita • Desa Sukomalo</span>
-            </div>
             <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
               Daftar Anak Balita
             </h1>
@@ -155,7 +192,7 @@ export default function Index({ initialChildren = [], posyandus = [] }: AnakInde
           </div>
 
           <button
-            onClick={() => setShowAddModal(true)}
+            onClick={handleOpenAddModal}
             className="inline-flex items-center justify-center space-x-2 px-4 py-2.5 bg-brand-600 hover:bg-brand-700 text-white font-semibold text-sm rounded-xl transition-all shadow-md shadow-brand-600/20 min-h-[44px]"
           >
             <Plus className="w-4 h-4" />
@@ -280,6 +317,14 @@ export default function Index({ initialChildren = [], posyandus = [] }: AnakInde
 
                   {/* Actions */}
                   <div className="pt-3 border-t border-slate-100 flex items-center justify-between gap-2">
+                    <button
+                      onClick={() => handleOpenEditModal(child)}
+                      className="p-2 text-brand-600 hover:bg-brand-50 rounded-xl transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center border border-slate-200"
+                      title="Edit Data Balita"
+                    >
+                      <Edit2 className="w-4 h-4" />
+                    </button>
+
                     <Link
                       href={`/anak/${child.id}`}
                       className="flex-1 py-2 px-3 text-center bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs rounded-xl transition-colors min-h-[44px] flex items-center justify-center"
@@ -309,12 +354,14 @@ export default function Index({ initialChildren = [], posyandus = [] }: AnakInde
           </div>
         )}
 
-        {/* Modal Tambah Anak */}
+        {/* Modal Tambah / Edit Anak */}
         {showAddModal && (
           <div className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4">
             <div className="bg-white rounded-3xl max-w-lg w-full p-6 space-y-4 shadow-2xl border border-slate-200 max-h-[90vh] overflow-y-auto">
               <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-                <h3 className="font-bold text-slate-900 text-lg">Tambah Balita Baru</h3>
+                <h3 className="font-bold text-slate-900 text-lg">
+                  {editingChild ? 'Edit Data Balita' : 'Tambah Balita Baru'}
+                </h3>
                 <button
                   onClick={() => setShowAddModal(false)}
                   className="p-1 rounded-lg text-slate-400 hover:text-slate-700 min-h-[44px] min-w-[44px] flex items-center justify-center"

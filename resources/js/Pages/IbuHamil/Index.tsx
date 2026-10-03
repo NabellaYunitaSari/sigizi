@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Link, usePage } from '@inertiajs/react';
+import { Link, usePage, router } from '@inertiajs/react';
 import AppShell from '../../Components/AppShell';
 import {
   Heart,
@@ -7,7 +7,7 @@ import {
   Plus,
   ChevronRight,
   X,
-  Sparkles,
+  Edit2,
 } from 'lucide-react';
 import { getStatusBadgeColor } from '../../lib/statusGizi';
 import { UserSession } from '../../Components/Navbar';
@@ -45,6 +45,7 @@ export default function Index({ initialBumilList = [], posyandus = [] }: BumilIn
   const [posyanduFilter, setPosyanduFilter] = useState('');
 
   const [showAddModal, setShowAddModal] = useState(false);
+  const [editingBumil, setEditingBumil] = useState<any | null>(null);
   const [formSubmitting, setFormSubmitting] = useState(false);
   const [formError, setFormError] = useState('');
 
@@ -58,6 +59,38 @@ export default function Index({ initialBumilList = [], posyandus = [] }: BumilIn
     hpht: '',
     id_pos: user?.id_pos || '',
   });
+
+  const handleOpenAddModal = () => {
+    setEditingBumil(null);
+    setFormError('');
+    setFormData({
+      nik: '',
+      nama: '',
+      tanggal_lahir: '',
+      nama_suami: '',
+      alamat: '',
+      kehamilan_ke: '1',
+      hpht: '',
+      id_pos: user?.id_pos || '',
+    });
+    setShowAddModal(true);
+  };
+
+  const handleOpenEditModal = (bumil: any) => {
+    setEditingBumil(bumil);
+    setFormError('');
+    setFormData({
+      nik: bumil.nik,
+      nama: bumil.nama,
+      tanggal_lahir: bumil.tanggal_lahir || '',
+      nama_suami: bumil.nama_suami,
+      alamat: bumil.alamat,
+      kehamilan_ke: bumil.kehamilan_ke ? bumil.kehamilan_ke.toString() : '1',
+      hpht: bumil.hpht,
+      id_pos: bumil.id_pos || user?.id_pos || '',
+    });
+    setShowAddModal(true);
+  };
 
   const loadBumil = async (s = search, p = posyanduFilter) => {
     let url = `/api/ibu-hamil?search=${encodeURIComponent(s)}`;
@@ -75,29 +108,33 @@ export default function Index({ initialBumilList = [], posyandus = [] }: BumilIn
     setFormSubmitting(true);
 
     try {
-      const res = await fetch('/api/ibu-hamil', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-        body: JSON.stringify(formData),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Gagal menyimpan data ibu hamil');
+      if (editingBumil) {
+        router.put(`/ibu-hamil/${editingBumil.id}`, formData, {
+          onSuccess: () => {
+            setShowAddModal(false);
+            setEditingBumil(null);
+            loadBumil();
+          },
+          onError: (errs) => {
+            setFormError(Object.values(errs).join(', ') || 'Gagal memperbarui data ibu hamil');
+          },
+          onFinish: () => setFormSubmitting(false),
+        });
+      } else {
+        const res = await fetch('/api/ibu-hamil', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+          body: JSON.stringify(formData),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Gagal menyimpan data ibu hamil');
 
-      setShowAddModal(false);
-      loadBumil();
-      setFormData({
-        nik: '',
-        nama: '',
-        tanggal_lahir: '',
-        nama_suami: '',
-        alamat: '',
-        kehamilan_ke: '1',
-        hpht: '',
-        id_pos: user?.id_pos || '',
-      });
+        setShowAddModal(false);
+        loadBumil();
+        setFormSubmitting(false);
+      }
     } catch (err: any) {
       setFormError(err.message);
-    } finally {
       setFormSubmitting(false);
     }
   };
@@ -108,10 +145,6 @@ export default function Index({ initialBumilList = [], posyandus = [] }: BumilIn
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
-            <div className="flex items-center space-x-2 text-xs font-semibold text-rose-600 uppercase tracking-wider mb-1">
-              <Sparkles className="w-3.5 h-3.5" />
-              <span>Modul Kesehatan Ibu • Desa Sukomalo</span>
-            </div>
             <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
               Daftar Ibu Hamil
             </h1>
@@ -121,8 +154,8 @@ export default function Index({ initialBumilList = [], posyandus = [] }: BumilIn
           </div>
 
           <button
-            onClick={() => setShowAddModal(true)}
-            className="inline-flex items-center justify-center space-x-2 px-4 py-2.5 bg-rose-600 hover:bg-rose-700 text-white font-semibold text-sm rounded-xl transition-all shadow-md shadow-rose-600/20 min-h-[44px]"
+            onClick={handleOpenAddModal}
+            className="inline-flex items-center justify-center space-x-2 px-4 py-2.5 bg-brand-600 hover:bg-brand-700 text-white font-semibold text-sm rounded-xl transition-all shadow-md shadow-brand-600/20 min-h-[44px]"
           >
             <Plus className="w-4 h-4" />
             <span>Tambah Ibu Hamil</span>
@@ -141,7 +174,7 @@ export default function Index({ initialBumilList = [], posyandus = [] }: BumilIn
                 loadBumil(e.target.value, posyanduFilter);
               }}
               placeholder="Cari NIK, nama ibu, atau nama suami..."
-              className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-rose-500 min-h-[44px]"
+              className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 min-h-[44px]"
             />
           </div>
 
@@ -182,7 +215,7 @@ export default function Index({ initialBumilList = [], posyandus = [] }: BumilIn
                   <div className="space-y-3">
                     <div className="flex items-start justify-between">
                       <div className="flex items-center space-x-3">
-                        <div className="w-10 h-10 rounded-xl bg-rose-100 text-rose-700 flex items-center justify-center font-bold">
+                        <div className="w-10 h-10 rounded-xl bg-brand-100 text-brand-700 flex items-center justify-center font-bold">
                           <Heart className="w-5 h-5" />
                         </div>
                         <div>
@@ -229,6 +262,14 @@ export default function Index({ initialBumilList = [], posyandus = [] }: BumilIn
 
                   {/* Actions */}
                   <div className="pt-3 border-t border-slate-100 flex items-center justify-between gap-2">
+                    <button
+                      onClick={() => handleOpenEditModal(bumil)}
+                      className="p-2 text-brand-600 hover:bg-brand-50 rounded-xl transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center border border-slate-200"
+                      title="Edit Data Ibu Hamil"
+                    >
+                      <Edit2 className="w-4 h-4" />
+                    </button>
+
                     <Link
                       href={`/ibu-hamil/${bumil.id}`}
                       className="flex-1 py-2 px-3 text-center bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs rounded-xl transition-colors min-h-[44px] flex items-center justify-center"
@@ -238,7 +279,7 @@ export default function Index({ initialBumilList = [], posyandus = [] }: BumilIn
 
                     <Link
                       href={`/ibu-hamil/${bumil.id}/input`}
-                      className="flex-1 py-2 px-3 text-center bg-rose-600 hover:bg-rose-700 text-white font-semibold text-xs rounded-xl transition-all shadow-sm min-h-[44px] flex items-center justify-center space-x-1"
+                      className="flex-1 py-2 px-3 text-center bg-brand-600 hover:bg-brand-700 text-white font-semibold text-xs rounded-xl transition-all shadow-sm min-h-[44px] flex items-center justify-center space-x-1"
                     >
                       <span>Input Periksa</span>
                       <ChevronRight className="w-3.5 h-3.5" />
@@ -255,12 +296,14 @@ export default function Index({ initialBumilList = [], posyandus = [] }: BumilIn
           </div>
         )}
 
-        {/* Modal Tambah Bumil */}
+        {/* Modal Tambah / Edit Bumil */}
         {showAddModal && (
           <div className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4">
             <div className="bg-white rounded-3xl max-w-lg w-full p-6 space-y-4 shadow-2xl border border-slate-200 max-h-[90vh] overflow-y-auto">
               <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-                <h3 className="font-bold text-slate-900 text-lg">Tambah Ibu Hamil Baru</h3>
+                <h3 className="font-bold text-slate-900 text-lg">
+                  {editingBumil ? 'Edit Data Ibu Hamil' : 'Tambah Ibu Hamil Baru'}
+                </h3>
                 <button
                   onClick={() => setShowAddModal(false)}
                   className="p-1 rounded-lg text-slate-400 hover:text-slate-700 min-h-[44px] min-w-[44px] flex items-center justify-center"
@@ -393,7 +436,7 @@ export default function Index({ initialBumilList = [], posyandus = [] }: BumilIn
                   <button
                     type="submit"
                     disabled={formSubmitting}
-                    className="px-5 py-2 bg-rose-600 hover:bg-rose-700 text-white text-xs font-semibold rounded-xl shadow-md min-h-[44px] disabled:opacity-60"
+                    className="px-5 py-2 bg-brand-600 hover:bg-brand-700 text-white text-xs font-semibold rounded-xl shadow-md min-h-[44px] disabled:opacity-60"
                   >
                     {formSubmitting ? 'Menyimpan...' : 'Simpan Data'}
                   </button>

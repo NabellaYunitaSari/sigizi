@@ -4,9 +4,11 @@ use App\Http\Controllers\AnakController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\IbuHamilController;
+use App\Http\Controllers\ImunisasiController;
 use App\Http\Controllers\LaporanController;
 use App\Http\Controllers\PosyanduController;
 use App\Http\Controllers\UserController;
+use App\Http\Controllers\VitaminController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
@@ -38,16 +40,36 @@ Route::middleware(['auth'])->group(function () {
     // Anak Balita
     Route::get('/anak', [AnakController::class, 'index'])->name('anak.index');
     Route::post('/anak', [AnakController::class, 'store'])->name('anak.store');
+    Route::put('/anak/{id}', [AnakController::class, 'update'])->name('anak.update');
     Route::get('/anak/{id}', [AnakController::class, 'show'])->name('anak.show');
     Route::get('/anak/{id}/input', [AnakController::class, 'inputPage'])->name('anak.input');
     Route::post('/anak/{id}/pengukuran', [AnakController::class, 'storePengukuran'])->name('anak.pengukuran.store');
 
+    // Pengukuran Balita Direct Input
+    Route::get('/pengukuran', [AnakController::class, 'pengukuranPage'])->name('pengukuran.index');
+    Route::post('/pengukuran', [AnakController::class, 'storePengukuranDirect'])->name('pengukuran.store');
+    Route::put('/pengukuran/{id}', [AnakController::class, 'updatePengukuranDirect'])->name('pengukuran.update');
+    Route::delete('/pengukuran/{id}', [AnakController::class, 'destroyPengukuran'])->name('pengukuran.destroy');
+
     // Ibu Hamil
     Route::get('/ibu-hamil', [IbuHamilController::class, 'index'])->name('ibu-hamil.index');
     Route::post('/ibu-hamil', [IbuHamilController::class, 'store'])->name('ibu-hamil.store');
+    Route::put('/ibu-hamil/{id}', [IbuHamilController::class, 'update'])->name('ibu-hamil.update');
     Route::get('/ibu-hamil/{id}', [IbuHamilController::class, 'show'])->name('ibu-hamil.show');
     Route::get('/ibu-hamil/{id}/input', [IbuHamilController::class, 'inputPage'])->name('ibu-hamil.input');
     Route::post('/ibu-hamil/{id}/pengukuran', [IbuHamilController::class, 'storePengukuran'])->name('ibu-hamil.pengukuran.store');
+
+    // Imunisasi Balita
+    Route::get('/imunisasi', [ImunisasiController::class, 'index'])->name('imunisasi.index');
+    Route::post('/imunisasi', [ImunisasiController::class, 'store'])->name('imunisasi.store');
+    Route::put('/imunisasi/{id}', [ImunisasiController::class, 'update'])->name('imunisasi.update');
+    Route::delete('/imunisasi/{id}', [ImunisasiController::class, 'destroy'])->name('imunisasi.destroy');
+
+    // Vitamin Balita
+    Route::get('/vitamin', [VitaminController::class, 'index'])->name('vitamin.index');
+    Route::post('/vitamin', [VitaminController::class, 'store'])->name('vitamin.store');
+    Route::put('/vitamin/{id}', [VitaminController::class, 'update'])->name('vitamin.update');
+    Route::delete('/vitamin/{id}', [VitaminController::class, 'destroy'])->name('vitamin.destroy');
 
     // Kelola User
     Route::get('/kelola-user', [UserController::class, 'index'])->name('kelola-user.index');
