@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Link, usePage, router } from '@inertiajs/react';
 import AppShell from '../../Components/AppShell';
 import {
@@ -43,6 +43,18 @@ export default function Index({ initialBumilList = [], posyandus = [] }: BumilIn
   const [bumilList, setBumilList] = useState<BumilData[]>(initialBumilList);
   const [search, setSearch] = useState('');
   const [posyanduFilter, setPosyanduFilter] = useState('');
+  const [statusFilter, setStatusFilter] = useState('Semua');
+
+  const filteredBumilList = useMemo(() => {
+    return bumilList.filter((bumil) => {
+      if (statusFilter === 'Semua') return true;
+      const lastExam = bumil.pengukuran ? bumil.pengukuran[0] : null;
+      if (!lastExam) return false;
+      if (statusFilter === 'KEK') return lastExam.status_gizi_bumil === 'KEK';
+      if (statusFilter === 'Normal') return lastExam.status_gizi_bumil === 'Normal';
+      return true;
+    });
+  }, [bumilList, statusFilter]);
 
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingBumil, setEditingBumil] = useState<any | null>(null);
@@ -186,7 +198,7 @@ export default function Index({ initialBumilList = [], posyandus = [] }: BumilIn
                   setPosyanduFilter(e.target.value);
                   loadBumil(search, e.target.value);
                 }}
-                className="w-full px-3 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-rose-500 min-h-[44px] bg-white"
+                className="w-full px-3 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 min-h-[44px] bg-white"
               >
                 <option value="">Semua Posyandu</option>
                 {posyandus.map((p) => (
@@ -197,12 +209,25 @@ export default function Index({ initialBumilList = [], posyandus = [] }: BumilIn
               </select>
             </div>
           )}
+
+          {/* Status Gizi Filter */}
+          <div className="w-full md:w-52">
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              className="w-full px-3 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 min-h-[44px] bg-white"
+            >
+              <option value="Semua">Semua Status Gizi</option>
+              <option value="KEK">Risiko KEK (LiLA &lt; 23.5 cm)</option>
+              <option value="Normal">Status Gizi Normal</option>
+            </select>
+          </div>
         </div>
 
         {/* List */}
-        {bumilList.length > 0 ? (
+        {filteredBumilList.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {bumilList.map((bumil) => {
+            {filteredBumilList.map((bumil) => {
               const lastExam = bumil.pengukuran ? bumil.pengukuran[0] : null;
               const isKek = lastExam?.status_gizi_bumil === 'KEK';
               const badgeColor = isKek ? getStatusBadgeColor('KEK') : getStatusBadgeColor('Normal');

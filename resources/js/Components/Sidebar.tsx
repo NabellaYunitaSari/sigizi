@@ -11,6 +11,7 @@ import {
   Syringe,
   Pill,
   Scale,
+  Sliders,
 } from 'lucide-react';
 import { UserSession } from './Navbar';
 
@@ -86,6 +87,11 @@ export default function Sidebar({ user: propUser }: SidebarProps) {
     ...(isKoordinatorOrAdmin
       ? [
           {
+            label: 'Kelola Standar Posyandu',
+            href: '/kelola-standar',
+            icon: Sliders,
+          },
+          {
             label: 'Kelola Akun Kader',
             href: '/kelola-user',
             icon: Users,
@@ -131,11 +137,6 @@ export default function Sidebar({ user: propUser }: SidebarProps) {
           );
         })}
       </nav>
-
-      {/* Footer Info */}
-      <div className="pt-4 border-t border-slate-100 text-xs text-slate-400 text-center">
-        SIGIZI Desa v1.0 • Standar Kemenkes RI
-      </div>
     </aside>
   );
 }

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Anak;
+use App\Models\MasterStandard;
 use App\Models\PengukuranAnak;
 use App\Models\Posyandu;
 use App\Services\StatusGiziService;
@@ -248,9 +249,12 @@ class AnakController extends Controller
         $childrenList = $queryChildren->get();
         $pengukuranList = $queryPengukuran->get();
 
+        $masterOptions = MasterStandard::where('kategori', 'pengukuran')->get();
+
         return Inertia::render('Pengukuran/Index', [
             'childrenList' => $childrenList,
             'pengukuranList' => $pengukuranList,
+            'masterOptions' => $masterOptions,
         ]);
     }
 

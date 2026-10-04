@@ -36,28 +36,31 @@ interface ImunisasiRecord {
 interface ImunisasiProps {
   imunisasiList: ImunisasiRecord[];
   childrenList: Child[];
+  masterOptions?: string[];
 }
 
-export default function Index({ imunisasiList = [], childrenList = [] }: ImunisasiProps) {
+export default function Index({ imunisasiList = [], childrenList = [], masterOptions = [] }: ImunisasiProps) {
   const page = usePage();
   const user = (page.props as any).auth?.user as UserSession | null;
+  const isKoordinatorOrAdmin = user?.role === 'koordinator' || user?.role === 'admin';
 
   const [searchTerm, setSearchTerm] = useState('');
   const [showModal, setShowModal] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [editingItem, setEditingItem] = useState<ImunisasiRecord | null>(null);
 
+  // Modal quick-add master standard
+  const [showMasterModal, setShowMasterModal] = useState(false);
+  const [newMasterName, setNewMasterName] = useState('');
+  const [newMasterKet, setNewMasterKet] = useState('');
+  const [submittingMaster, setSubmittingMaster] = useState(false);
+
   // Autocomplete child selection in modal
   const [selectedChild, setSelectedChild] = useState<Child | null>(null);
   const [childSearchQuery, setChildSearchQuery] = useState('');
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
-  const [formData, setFormData] = useState({
-    jenis_imunisasi: 'BCG',
-    tanggal: new Date().toISOString().split('T')[0],
-  });
-
-  const jenisOptions = [
+  const defaultJenisOptions = [
     'HB-0 (0-7 Hari)',
     'BCG',
     'Polio 1',
@@ -75,6 +78,15 @@ export default function Index({ imunisasiList = [], childrenList = [] }: Imunisa
     'Booster DPT-HB-Hib',
     'Booster Campak / MR 2',
   ];
+
+  const jenisOptions = useMemo(() => {
+    return Array.from(new Set([...defaultJenisOptions, ...masterOptions]));
+  }, [masterOptions]);
+
+  const [formData, setFormData] = useState({
+    jenis_imunisasi: 'BCG',
+    tanggal: new Date().toISOString().split('T')[0],
+  });
 
   const filteredChildrenForInput = useMemo(() => {
     if (!childSearchQuery.trim()) return childrenList.slice(0, 10);
@@ -160,6 +172,26 @@ export default function Index({ imunisasiList = [], childrenList = [] }: Imunisa
     }
   };
 
+  const handleCreateNewMaster = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newMasterName.trim()) return;
+
+    setSubmittingMaster(true);
+    router.post('/kelola-standar', {
+      kategori: 'imunisasi',
+      nama: newMasterName.trim(),
+      keterangan: newMasterKet.trim(),
+    }, {
+      onSuccess: () => {
+        setFormData({ ...formData, jenis_imunisasi: newMasterName.trim() });
+        setNewMasterName('');
+        setNewMasterKet('');
+        setShowMasterModal(false);
+      },
+      onFinish: () => setSubmittingMaster(false),
+    });
+  };
+
   const handleDelete = (id: string, name: string) => {
     if (confirm(`Apakah Anda yakin ingin menghapus catatan imunisasi untuk ${name}?`)) {
       router.delete(`/imunisasi/${id}`);
@@ -180,13 +212,25 @@ export default function Index({ imunisasiList = [], childrenList = [] }: Imunisa
             </p>
           </div>
 
-          <button
-            onClick={handleOpenAddModal}
-            className="inline-flex items-center justify-center space-x-2 px-4 py-2.5 bg-brand-600 hover:bg-brand-700 text-white font-semibold text-sm rounded-xl transition-all shadow-md shadow-brand-600/20 min-h-[44px]"
-          >
-            <PlusCircle className="w-4 h-4" />
-            <span>Catat Imunisasi Baru</span>
-          </button>
+          <div className="flex items-center gap-2">
+            {isKoordinatorOrAdmin && (
+              <button
+                onClick={() => setShowMasterModal(true)}
+                className="inline-flex items-center justify-center space-x-1.5 px-3.5 py-2.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200/80 font-bold text-xs rounded-xl transition-all min-h-[44px]"
+              >
+                <PlusCircle className="w-4 h-4 text-emerald-600" />
+                <span>+ Jenis Imunisasi Baru</span>
+              </button>
+            )}
+
+            <button
+              onClick={handleOpenAddModal}
+              className="inline-flex items-center justify-center space-x-2 px-4 py-2.5 bg-brand-600 hover:bg-brand-700 text-white font-semibold text-sm rounded-xl transition-all shadow-md shadow-brand-600/20 min-h-[44px]"
+            >
+              <PlusCircle className="w-4 h-4" />
+              <span>Catat Imunisasi Baru</span>
+            </button>
+          </div>
         </div>
 
         {/* Search & Stats Filter */}
@@ -368,7 +412,18 @@ export default function Index({ imunisasiList = [], childrenList = [] }: Imunisa
               )}
 
               <div>
-                <label className="block font-semibold text-slate-700 mb-1">Jenis Imunisasi *</label>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="block font-semibold text-slate-700">Jenis Imunisasi *</label>
+                  {isKoordinatorOrAdmin && (
+                    <button
+                      type="button"
+                      onClick={() => setShowMasterModal(true)}
+                      className="text-[11px] font-bold text-brand-600 hover:text-brand-700 hover:underline"
+                    >
+                      + Tambah Jenis Imunisasi Baru
+                    </button>
+                  )}
+                </div>
                 <select
                   required
                   value={formData.jenis_imunisasi}
@@ -408,6 +463,70 @@ export default function Index({ imunisasiList = [], childrenList = [] }: Imunisa
                   className="px-5 py-2.5 bg-brand-600 hover:bg-brand-700 text-white font-semibold rounded-xl shadow-md shadow-brand-600/20 disabled:opacity-50"
                 >
                   {submitting ? 'Menyimpan...' : editingItem ? 'Simpan Perubahan' : 'Simpan Imunisasi'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Quick Add Standar Imunisasi Baru */}
+      {showMasterModal && (
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl shadow-xl border border-slate-200 max-w-md w-full p-6 space-y-4 animate-in fade-in zoom-in-95">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <h3 className="font-bold text-slate-900 text-base">Tambah Jenis Imunisasi Baru</h3>
+              <button
+                type="button"
+                onClick={() => setShowMasterModal(false)}
+                className="p-1 text-slate-400 hover:text-slate-600 rounded-lg"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleCreateNewMaster} className="space-y-4">
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">
+                  Nama Jenis Imunisasi Baru <span className="text-rose-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  placeholder="Contoh: Rotavirus 1, DPT-HB-Hib 4, PCV Booster"
+                  value={newMasterName}
+                  onChange={(e) => setNewMasterName(e.target.value)}
+                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium focus:ring-2 focus:ring-brand-500 outline-none"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">
+                  Keterangan / Dosis Target (Opsional)
+                </label>
+                <textarea
+                  rows={3}
+                  placeholder="Contoh: Vaksin oral untuk bayi usia 2, 3, dan 4 bulan (Program Kemenkes RI)"
+                  value={newMasterKet}
+                  onChange={(e) => setNewMasterKet(e.target.value)}
+                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium focus:ring-2 focus:ring-brand-500 outline-none resize-none"
+                />
+              </div>
+
+              <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => setShowMasterModal(false)}
+                  className="px-4 py-2 border border-slate-200 text-slate-600 rounded-xl font-semibold text-xs hover:bg-slate-50 transition-all min-h-[38px]"
+                >
+                  Batal
+                </button>
+                <button
+                  type="submit"
+                  disabled={submittingMaster}
+                  className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold text-xs shadow-md shadow-emerald-600/20 transition-all min-h-[38px] disabled:opacity-50"
+                >
+                  {submittingMaster ? 'Menyimpan...' : 'Tambah Standar Imunisasi'}
                 </button>
               </div>
             </form>

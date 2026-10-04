@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Anak;
 use App\Models\Imunisasi;
+use App\Models\MasterStandard;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
@@ -35,10 +36,12 @@ class ImunisasiController extends Controller
         }
 
         $imunisasiList = $imunisasiQuery->get();
+        $masterOptions = MasterStandard::where('kategori', 'imunisasi')->pluck('nama')->toArray();
 
         return Inertia::render('Imunisasi/Index', [
             'imunisasiList' => $imunisasiList,
             'childrenList' => $childrenList,
+            'masterOptions' => $masterOptions,
         ]);
     }
 

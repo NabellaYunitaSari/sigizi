@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Anak;
+use App\Models\MasterStandard;
 use App\Models\Vitamin;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -35,10 +36,12 @@ class VitaminController extends Controller
         }
 
         $vitaminList = $vitaminQuery->get();
+        $masterOptions = MasterStandard::where('kategori', 'vitamin')->pluck('nama')->toArray();
 
         return Inertia::render('Vitamin/Index', [
             'vitaminList' => $vitaminList,
             'childrenList' => $childrenList,
+            'masterOptions' => $masterOptions,
         ]);
     }
 

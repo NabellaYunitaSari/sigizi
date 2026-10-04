@@ -6,9 +6,11 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\IbuHamilController;
 use App\Http\Controllers\ImunisasiController;
 use App\Http\Controllers\LaporanController;
+use App\Http\Controllers\MasterStandardController;
 use App\Http\Controllers\PosyanduController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\VitaminController;
+use App\Models\MasterStandard;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
@@ -80,7 +82,18 @@ Route::middleware(['auth'])->group(function () {
     // Laporan
     Route::get('/laporan', [LaporanController::class, 'index'])->name('laporan.index');
 
+    // Kelola Standar / Master Data (Bu Bidan & Admin)
+    Route::get('/kelola-standar', [MasterStandardController::class, 'index'])->name('kelola-standar.index');
+    Route::post('/kelola-standar', [MasterStandardController::class, 'store'])->name('kelola-standar.store');
+    Route::put('/kelola-standar/{id}', [MasterStandardController::class, 'update'])->name('kelola-standar.update');
+    Route::delete('/kelola-standar/{id}', [MasterStandardController::class, 'destroy'])->name('kelola-standar.destroy');
+
     // API JSON Endpoints (used by React fetch calls)
+    Route::get('/api/master-standards', function () {
+        return response()->json(MasterStandard::orderBy('nama', 'asc')->get());
+    });
+    Route::post('/api/master-standards', [MasterStandardController::class, 'store']);
+
     Route::get('/api/anak', [AnakController::class, 'index']);
     Route::post('/api/anak', [AnakController::class, 'store']);
     Route::get('/api/anak/{id}', [AnakController::class, 'show']);

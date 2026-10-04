@@ -48,11 +48,13 @@ interface PengukuranRecord {
 interface PengukuranPageProps {
   childrenList: Child[];
   pengukuranList?: PengukuranRecord[];
+  masterOptions?: any[];
 }
 
-export default function Index({ childrenList = [], pengukuranList = [] }: PengukuranPageProps) {
+export default function Index({ childrenList = [], pengukuranList = [], masterOptions = [] }: PengukuranPageProps) {
   const page = usePage();
   const user = (page.props as any).auth?.user as UserSession | null;
+  const isKoordinatorOrAdmin = user?.role === 'koordinator' || user?.role === 'admin';
 
   // Search filter
   const [searchTerm, setSearchTerm] = useState('');
@@ -63,6 +65,12 @@ export default function Index({ childrenList = [], pengukuranList = [] }: Penguk
   const [selectedChild, setSelectedChild] = useState<Child | null>(null);
   const [childSearchQuery, setChildSearchQuery] = useState('');
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+
+  // Modal quick-add master standard
+  const [showMasterModal, setShowMasterModal] = useState(false);
+  const [newMasterName, setNewMasterName] = useState('');
+  const [newMasterKet, setNewMasterKet] = useState('');
+  const [submittingMaster, setSubmittingMaster] = useState(false);
 
   // Form fields
   const [tanggalUkur, setTanggalUkur] = useState(new Date().toISOString().split('T')[0]);
@@ -219,6 +227,26 @@ export default function Index({ childrenList = [], pengukuranList = [] }: Penguk
     }
   };
 
+  const handleCreateNewMaster = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newMasterName.trim()) return;
+
+    setSubmittingMaster(true);
+    router.post('/kelola-standar', {
+      kategori: 'pengukuran',
+      nama: newMasterName.trim(),
+      keterangan: newMasterKet.trim(),
+    }, {
+      onSuccess: () => {
+        setNewMasterName('');
+        setNewMasterKet('');
+        setShowMasterModal(false);
+        setSuccessMsg(`Standar parameter baru "${newMasterName.trim()}" berhasil ditambahkan!`);
+      },
+      onFinish: () => setSubmittingMaster(false),
+    });
+  };
+
   const handleDelete = (id: string, childName: string) => {
     if (confirm(`Apakah Anda yakin ingin menghapus catatan pengukuran untuk ${childName}?`)) {
       router.delete(`/pengukuran/${id}`, {
@@ -236,20 +264,32 @@ export default function Index({ childrenList = [], pengukuranList = [] }: Penguk
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
             <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
-              Pencatatan Imunisasi & Antropometri Balita
+              Pencatatan Antropometri Balita
             </h1>
             <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
               Kelola & catat hasil penimbangan berat badan dan tinggi badan balita
             </p>
           </div>
 
-          <button
-            onClick={() => handleOpenModalWithChild()}
-            className="inline-flex items-center justify-center space-x-2 px-4 py-2.5 bg-brand-600 hover:bg-brand-700 text-white font-semibold text-sm rounded-xl transition-all shadow-md shadow-brand-600/20 min-h-[44px]"
-          >
-            <PlusCircle className="w-4 h-4" />
-            <span>Catat Pengukuran Baru</span>
-          </button>
+          <div className="flex items-center gap-2">
+            {isKoordinatorOrAdmin && (
+              <button
+                onClick={() => setShowMasterModal(true)}
+                className="inline-flex items-center justify-center space-x-1.5 px-3.5 py-2.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200/80 font-bold text-xs rounded-xl transition-all min-h-[44px]"
+              >
+                <PlusCircle className="w-4 h-4 text-emerald-600" />
+                <span>+ Standar Parameter Baru</span>
+              </button>
+            )}
+
+            <button
+              onClick={() => handleOpenModalWithChild()}
+              className="inline-flex items-center justify-center space-x-2 px-4 py-2.5 bg-brand-600 hover:bg-brand-700 text-white font-semibold text-sm rounded-xl transition-all shadow-md shadow-brand-600/20 min-h-[44px]"
+            >
+              <PlusCircle className="w-4 h-4" />
+              <span>Catat Pengukuran Baru</span>
+            </button>
+          </div>
         </div>
 
         {/* Success Alert */}
@@ -625,6 +665,70 @@ export default function Index({ childrenList = [], pengukuranList = [] }: Penguk
                     className="px-5 py-2.5 bg-brand-600 hover:bg-brand-700 text-white text-xs font-semibold rounded-xl min-h-[42px] shadow-md shadow-brand-600/20 disabled:opacity-50"
                   >
                     {submitting ? 'Menyimpan...' : 'Simpan Pengukuran'}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+
+        {/* Modal Quick Add Standar Parameter Pengukuran Baru */}
+        {showMasterModal && (
+          <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+            <div className="bg-white rounded-2xl shadow-xl border border-slate-200 max-w-md w-full p-6 space-y-4 animate-in fade-in zoom-in-95">
+              <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                <h3 className="font-bold text-slate-900 text-base">Tambah Parameter / Standar Pengukuran Baru</h3>
+                <button
+                  type="button"
+                  onClick={() => setShowMasterModal(false)}
+                  className="p-1 text-slate-400 hover:text-slate-600 rounded-lg"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              <form onSubmit={handleCreateNewMaster} className="space-y-4">
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                    Nama Parameter / Standar Baru <span className="text-rose-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="Contoh: Lingkar Kepala (LK), Pemeriksaan Hb Balita, IMT Balita"
+                    value={newMasterName}
+                    onChange={(e) => setNewMasterName(e.target.value)}
+                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium focus:ring-2 focus:ring-brand-500 outline-none"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                    Keterangan / Satuan (Opsional)
+                  </label>
+                  <textarea
+                    rows={3}
+                    placeholder="Contoh: Satuan cm, batas normal Lingkar Kepala bayi sesuai grafik WHO 2026"
+                    value={newMasterKet}
+                    onChange={(e) => setNewMasterKet(e.target.value)}
+                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium focus:ring-2 focus:ring-brand-500 outline-none resize-none"
+                  />
+                </div>
+
+                <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
+                  <button
+                    type="button"
+                    onClick={() => setShowMasterModal(false)}
+                    className="px-4 py-2 border border-slate-200 text-slate-600 rounded-xl font-semibold text-xs hover:bg-slate-50 transition-all min-h-[38px]"
+                  >
+                    Batal
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={submittingMaster}
+                    className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold text-xs shadow-md shadow-emerald-600/20 transition-all min-h-[38px] disabled:opacity-50"
+                  >
+                    {submittingMaster ? 'Menyimpan...' : 'Tambah Standar Parameter'}
                   </button>
                 </div>
               </form>

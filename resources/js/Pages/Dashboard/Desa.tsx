@@ -4,7 +4,6 @@ import AppShell from '../../Components/AppShell';
 import {
   CheckCircle2,
   TrendingUp,
-  Award,
   BarChart2,
   Heart,
   Baby,
@@ -356,50 +355,6 @@ export default function Desa({
                 })}
               </tbody>
             </table>
-          </div>
-        </div>
-
-        {/* Monitoring Pelatihan Pre-Test / Post-Test Kader */}
-        <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm space-y-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <h3 className="font-bold text-slate-900 text-base flex items-center gap-2">
-                <Award className="w-5 h-5 text-amber-500" />
-                <span>Hasil Monitoring Pre-Test & Post-Test Pelatihan Kader</span>
-              </h3>
-              <p className="text-xs text-slate-500">Evaluasi peningkatan kompetensi kader antropometri</p>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-            {trainingResults.map((t) => {
-              const delta = t.skor_posttest - t.skor_pretest;
-              return (
-                <div key={t.id} className="p-4 rounded-xl border border-slate-200/80 bg-slate-50 space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span className="font-bold text-slate-800 text-sm">{t.user?.nama}</span>
-                    <span className="px-2 py-0.5 bg-brand-100 text-brand-800 text-[10px] font-bold rounded-md">
-                      Pos {t.user?.posyandu?.nama_pos || 'Desa'}
-                    </span>
-                  </div>
-
-                  <div className="grid grid-cols-3 gap-2 text-center text-xs pt-1 border-t border-slate-200/60">
-                    <div>
-                      <span className="text-slate-400 block text-[10px]">Pre-Test</span>
-                      <span className="font-bold text-slate-600">{t.skor_pretest}</span>
-                    </div>
-                    <div>
-                      <span className="text-slate-400 block text-[10px]">Post-Test</span>
-                      <span className="font-bold text-emerald-600">{t.skor_posttest}</span>
-                    </div>
-                    <div>
-                      <span className="text-slate-400 block text-[10px]">Kenaikan</span>
-                      <span className="font-bold text-brand-600">+{delta} pts</span>
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
           </div>
         </div>
       </div>
