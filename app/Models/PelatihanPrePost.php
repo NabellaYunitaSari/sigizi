@@ -11,6 +11,7 @@ class PelatihanPrePost extends Model
     use HasFactory, HasUuids;
 
     protected $table = 'pelatihan_pre_posts';
+
     public $timestamps = false;
 
     protected $fillable = [

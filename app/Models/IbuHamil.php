@@ -11,6 +11,7 @@ class IbuHamil extends Model
     use HasFactory, HasUuids;
 
     protected $table = 'ibu_hamils';
+
     protected $fillable = [
         'id',
         'id_pos',

@@ -25,7 +25,7 @@ class DashboardController extends Controller
         $query = Anak::with([
             'posyandu',
             'pengukuran' => function ($q) {
-                $q->orderBy('tanggal_ukur', 'desc')->take(1);
+                $q->orderBy('tanggal_ukur', 'desc');
             },
             'imunisasi',
         ])->orderBy('nama_anak', 'asc');
@@ -216,7 +216,7 @@ class DashboardController extends Controller
 
         // 4. Pregnant Women Trimester Distribution Data (Bar Chart)
         $bumilQuery = IbuHamil::with(['pengukuran' => function ($q) {
-            $q->orderBy('tanggal_periksa', 'desc')->take(1);
+            $q->orderBy('tanggal_periksa', 'desc');
         }]);
 
         if ($user->role === 'kader' && $currentPosId) {
@@ -349,6 +349,7 @@ class DashboardController extends Controller
 
         return Inertia::render('Dashboard/Index', [
             'childrenInPos' => $childrenInPos,
+            'bumilList' => $bumilList,
             'totalAnak' => $totalAnak,
             'countMeasured' => $countMeasured,
             'progressPercent' => $progressPercent,

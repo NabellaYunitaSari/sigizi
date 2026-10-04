@@ -8,10 +8,8 @@ import {
   Users,
   Building2,
   ChevronRight,
-  Syringe,
-  Pill,
-  Scale,
   Sliders,
+  Database,
 } from 'lucide-react';
 import { UserSession } from './Navbar';
 
@@ -52,6 +50,11 @@ export default function Sidebar({ user: propUser }: SidebarProps) {
             href: '/dashboard',
             icon: LayoutDashboard,
           },
+          {
+            label: 'Master Data',
+            href: '/master-data',
+            icon: Database,
+          },
         ]
       : []),
     {
@@ -63,21 +66,6 @@ export default function Sidebar({ user: propUser }: SidebarProps) {
       label: 'Data Ibu Hamil',
       href: '/ibu-hamil',
       icon: Heart,
-    },
-    {
-      label: 'Pengukuran Balita',
-      href: '/pengukuran',
-      icon: Scale,
-    },
-    {
-      label: 'Imunisasi Balita',
-      href: '/imunisasi',
-      icon: Syringe,
-    },
-    {
-      label: 'Vitamin Balita',
-      href: '/vitamin',
-      icon: Pill,
     },
     {
       label: 'Laporan & Rekap',
@@ -116,7 +104,11 @@ export default function Sidebar({ user: propUser }: SidebarProps) {
       <nav className="space-y-1.5 flex-1">
         {navItems.map((item) => {
           const Icon = item.icon;
-          const isActive = pathname === item.href || (item.href !== '/dashboard' && item.href !== '/dashboard-desa' && pathname.startsWith(item.href));
+          const isActive = pathname === item.href || (
+            item.href !== '/dashboard' &&
+            item.href !== '/dashboard-desa' &&
+            pathname.startsWith(item.href)
+          );
 
           return (
             <Link
@@ -132,7 +124,20 @@ export default function Sidebar({ user: propUser }: SidebarProps) {
                 <Icon className={`w-5 h-5 ${isActive ? 'text-white' : 'text-slate-500'}`} />
                 <span>{item.label}</span>
               </div>
-              {isActive && <ChevronRight className="w-4 h-4 text-brand-200" />}
+              <div className="flex items-center gap-1.5">
+                {item.badge && (
+                  <span
+                    className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${
+                      isActive
+                        ? 'bg-white/20 text-white border-white/30'
+                        : item.badgeColor || 'bg-slate-100 text-slate-700 border-slate-200'
+                    }`}
+                  >
+                    {item.badge}
+                  </span>
+                )}
+                {isActive && <ChevronRight className="w-4 h-4 text-brand-200" />}
+              </div>
             </Link>
           );
         })}

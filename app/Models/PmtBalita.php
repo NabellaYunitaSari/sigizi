@@ -11,6 +11,7 @@ class PmtBalita extends Model
     use HasFactory, HasUuids;
 
     protected $table = 'pmt_balitas';
+
     public $timestamps = false;
 
     protected $fillable = [

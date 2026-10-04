@@ -11,6 +11,7 @@ class Posyandu extends Model
     use HasFactory, HasUuids;
 
     protected $table = 'posyandus';
+
     protected $fillable = ['id', 'nama_pos', 'dusun', 'alamat'];
 
     public function users()

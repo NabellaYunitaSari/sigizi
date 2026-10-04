@@ -12,10 +12,10 @@ class StatusGiziService
         $measureDate = new DateTime($measureDateInput);
 
         $months = ($measureDate->format('Y') - $birthDate->format('Y')) * 12;
-        $months -= (int)$birthDate->format('m');
-        $months += (int)$measureDate->format('m');
+        $months -= (int) $birthDate->format('m');
+        $months += (int) $measureDate->format('m');
 
-        if ((int)$measureDate->format('d') < (int)$birthDate->format('d')) {
+        if ((int) $measureDate->format('d') < (int) $birthDate->format('d')) {
             $months--;
         }
 
@@ -52,7 +52,10 @@ class StatusGiziService
 
     private static function calculateZScore(float $value, float $median, float $sd): float
     {
-        if ($sd == 0) return 0;
+        if ($sd == 0) {
+            return 0;
+        }
+
         return ($value - $median) / $sd;
     }
 

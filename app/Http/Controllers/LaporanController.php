@@ -6,7 +6,6 @@ use App\Models\Anak;
 use App\Models\IbuHamil;
 use App\Models\Posyandu;
 use Illuminate\Http\Request;
-
 use Inertia\Inertia;
 
 class LaporanController extends Controller

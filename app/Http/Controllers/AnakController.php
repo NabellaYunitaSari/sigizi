@@ -46,9 +46,21 @@ class AnakController extends Controller
 
         $posyandus = Posyandu::orderBy('nama_pos', 'asc')->get();
 
+        $masterImunisasi = MasterStandard::where('kategori', 'imunisasi')->pluck('nama')->toArray();
+        if (empty($masterImunisasi)) {
+            $masterImunisasi = ['HB-0', 'BCG', 'Polio 1', 'DPT-HB-Hib 1', 'Polio 2', 'DPT-HB-Hib 2', 'Polio 3', 'DPT-HB-Hib 3', 'Polio 4', 'IPV', 'Campak / MR', 'DPT-HB-Hib Lanjutan', 'Campak / MR Lanjutan'];
+        }
+
+        $masterVitamin = MasterStandard::where('kategori', 'vitamin')->pluck('nama')->toArray();
+        if (empty($masterVitamin)) {
+            $masterVitamin = ['Vitamin A Biru (100.000 IU)', 'Vitamin A Merah (200.000 IU)'];
+        }
+
         return Inertia::render('Anak/Index', [
             'initialChildren' => $children,
             'posyandus' => $posyandus,
+            'masterImunisasi' => $masterImunisasi,
+            'masterVitamin' => $masterVitamin,
         ]);
     }
 
@@ -96,6 +108,13 @@ class AnakController extends Controller
     public function store(Request $request)
     {
         $user = Auth::user();
+
+        if ($user && $user->role === 'kader') {
+            if ($request->wantsJson()) {
+                return response()->json(['error' => 'Akses ditolak. Hanya Koordinator dan Admin yang dapat menambahkan data sasaran.'], 403);
+            }
+            abort(403, 'Akses ditolak. Hanya Koordinator dan Admin yang dapat menambahkan data sasaran.');
+        }
 
         $request->validate([
             'nik' => 'required|string|unique:anaks,nik',

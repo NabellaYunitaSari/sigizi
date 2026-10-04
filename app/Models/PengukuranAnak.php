@@ -11,6 +11,7 @@ class PengukuranAnak extends Model
     use HasFactory, HasUuids;
 
     protected $table = 'pengukuran_anaks';
+
     public $timestamps = false;
 
     protected $fillable = [

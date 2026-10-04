@@ -11,6 +11,7 @@ class OtpVerification extends Model
     use HasFactory, HasUuids;
 
     protected $table = 'otp_verifications';
+
     public $timestamps = false;
 
     protected $fillable = [

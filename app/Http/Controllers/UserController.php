@@ -16,7 +16,7 @@ class UserController extends Controller
     public function index(Request $request)
     {
         $currentUser = Auth::user();
-        if (!$currentUser || ($currentUser->role !== 'admin' && $currentUser->role !== 'koordinator')) {
+        if (! $currentUser || ($currentUser->role !== 'admin' && $currentUser->role !== 'koordinator')) {
             return redirect()->route('dashboard');
         }
 
@@ -43,7 +43,7 @@ class UserController extends Controller
         ]);
 
         $noHp = $request->input('no_hp');
-        if (!empty($noHp)) {
+        if (! empty($noHp)) {
             $formattedPhone = WhatsAppService::formatPhoneForWhatsApp($noHp);
             $existing = User::where('no_hp', $noHp)->orWhere('no_hp', $formattedPhone)->first();
             if ($existing) {
@@ -72,18 +72,18 @@ class UserController extends Controller
     public function update(Request $request, string $id)
     {
         $user = User::find($id);
-        if (!$user) {
+        if (! $user) {
             return response()->json(['error' => 'User tidak ditemukan'], 404);
         }
 
         $request->validate([
             'nama' => 'required|string',
-            'username' => 'required|string|unique:users,username,' . $id,
+            'username' => 'required|string|unique:users,username,'.$id,
             'role' => 'required|string|in:kader,koordinator,admin',
         ]);
 
         $noHp = $request->input('no_hp');
-        if (!empty($noHp)) {
+        if (! empty($noHp)) {
             $formattedPhone = WhatsAppService::formatPhoneForWhatsApp($noHp);
             $existing = User::where('id', '!=', $id)
                 ->where(function ($q) use ($noHp, $formattedPhone) {
@@ -117,7 +117,7 @@ class UserController extends Controller
     public function destroy(Request $request, string $id)
     {
         $user = User::find($id);
-        if (!$user) {
+        if (! $user) {
             return response()->json(['error' => 'User tidak ditemukan'], 404);
         }
 

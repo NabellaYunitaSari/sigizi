@@ -6,6 +6,7 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\IbuHamilController;
 use App\Http\Controllers\ImunisasiController;
 use App\Http\Controllers\LaporanController;
+use App\Http\Controllers\MasterDataController;
 use App\Http\Controllers\MasterStandardController;
 use App\Http\Controllers\PosyanduController;
 use App\Http\Controllers\UserController;
@@ -82,7 +83,10 @@ Route::middleware(['auth'])->group(function () {
     // Laporan
     Route::get('/laporan', [LaporanController::class, 'index'])->name('laporan.index');
 
-    // Kelola Standar / Master Data (Bu Bidan & Admin)
+    // Master Data Sasaran (Balita & Ibu Hamil - Khusus Koordinator & Admin)
+    Route::get('/master-data', [MasterDataController::class, 'index'])->name('master-data.index');
+
+    // Kelola Standar Posyandu (Bu Bidan & Admin)
     Route::get('/kelola-standar', [MasterStandardController::class, 'index'])->name('kelola-standar.index');
     Route::post('/kelola-standar', [MasterStandardController::class, 'store'])->name('kelola-standar.store');
     Route::put('/kelola-standar/{id}', [MasterStandardController::class, 'update'])->name('kelola-standar.update');

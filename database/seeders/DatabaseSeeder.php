@@ -75,7 +75,7 @@ class DatabaseSeeder extends Seeder
         $kaders = [];
         foreach ($posyanduData as $pos) {
             $namaPos = $pos['nama_pos'];
-            $username = 'kader_' . strtolower($namaPos);
+            $username = 'kader_'.strtolower($namaPos);
             $user = User::create([
                 'id' => (string) Str::uuid(),
                 'nama' => "Kader {$namaPos}",
@@ -114,7 +114,7 @@ class DatabaseSeeder extends Seeder
         $kkCounter = 3515010101009999;
 
         foreach ($anakSeedList as $item) {
-            $birthDate = new DateTime();
+            $birthDate = new DateTime;
             $birthDate->modify("-{$item['ageM']} months");
 
             $posId = $posMap[$item['pos']];
@@ -128,9 +128,9 @@ class DatabaseSeeder extends Seeder
                 'nama_anak' => $item['nama'],
                 'jenis_kelamin' => $item['jk'],
                 'tanggal_lahir' => $birthDate->format('Y-m-d'),
-                'nama_ayah' => 'Bpk. ' . explode(' ', $item['nama'])[0],
-                'nama_ibu' => 'Ibu ' . (explode(' ', $item['nama'])[1] ?? 'Siti'),
-                'no_hp_ortu' => '081234567' . rand(100, 999),
+                'nama_ayah' => 'Bpk. '.explode(' ', $item['nama'])[0],
+                'nama_ibu' => 'Ibu '.(explode(' ', $item['nama'])[1] ?? 'Siti'),
+                'no_hp_ortu' => '081234567'.rand(100, 999),
                 'alamat' => "Dusun {$item['pos']}, RT 01 RW 02 Sukomalo",
                 'berat_lahir_gram' => 3100 + rand(0, 400),
                 'panjang_lahir_cm' => 49.0 + rand(0, 3),
@@ -138,7 +138,7 @@ class DatabaseSeeder extends Seeder
 
             // Historical measurements (3, 2, 1 month ago)
             for ($m = 3; $m >= 1; $m--) {
-                $measureDate = new DateTime();
+                $measureDate = new DateTime;
                 $measureDate->setDate($currentYear, $currentMonth - $m + 1, 15);
                 $ageAtM = StatusGiziService::calculateAgeInMonths($birthDate->format('Y-m-d'), $measureDate->format('Y-m-d'));
                 $pastWeight = max(3.0, $item['weight'] - $m * 0.4);
@@ -162,7 +162,7 @@ class DatabaseSeeder extends Seeder
             }
 
             if ($item['measuredThisMonth']) {
-                $measureDate = new DateTime();
+                $measureDate = new DateTime;
                 $measureDate->setDate($currentYear, $currentMonth + 1, 5);
                 $ageAtM = StatusGiziService::calculateAgeInMonths($birthDate->format('Y-m-d'), $measureDate->format('Y-m-d'));
                 $nut = StatusGiziService::classifyNutritionStatus($item['weight'], $item['height'], $ageAtM, $item['jk']);
@@ -200,7 +200,7 @@ class DatabaseSeeder extends Seeder
             $posId = $posMap[$b['pos']];
             $kaderUser = $kaders[$b['pos']];
 
-            $hphtDate = new DateTime();
+            $hphtDate = new DateTime;
             $hphtDate->modify("-{$b['hphtWeeks']} weeks");
 
             $bumil = IbuHamil::create([
@@ -209,7 +209,7 @@ class DatabaseSeeder extends Seeder
                 'nik' => (string) $bumilNikCounter++,
                 'nama' => $b['nama'],
                 'tanggal_lahir' => '1995-05-12',
-                'nama_suami' => 'Bpk. ' . (explode(' ', $b['nama'])[1] ?? 'Suryo'),
+                'nama_suami' => 'Bpk. '.(explode(' ', $b['nama'])[1] ?? 'Suryo'),
                 'alamat' => "Dusun {$b['pos']}, Sukomalo",
                 'kehamilan_ke' => 1,
                 'hpht' => $hphtDate->format('Y-m-d'),
@@ -217,7 +217,7 @@ class DatabaseSeeder extends Seeder
 
             $statusBumil = StatusGiziService::classifyBumilStatus($b['lila']);
 
-            $measureDate = new DateTime();
+            $measureDate = new DateTime;
             $measureDate->setDate($currentYear, $currentMonth + 1, 10);
 
             PengukuranBumil::create([

@@ -11,10 +11,11 @@ class WhatsAppService
     {
         $cleaned = preg_replace('/\D/', '', $phone);
         if (str_starts_with($cleaned, '0')) {
-            $cleaned = '62' . substr($cleaned, 1);
-        } elseif (!str_starts_with($cleaned, '62') && str_starts_with($cleaned, '8')) {
-            $cleaned = '62' . $cleaned;
+            $cleaned = '62'.substr($cleaned, 1);
+        } elseif (! str_starts_with($cleaned, '62') && str_starts_with($cleaned, '8')) {
+            $cleaned = '62'.$cleaned;
         }
+
         return $cleaned;
     }
 
@@ -27,7 +28,7 @@ class WhatsAppService
         $apiSuccess = false;
         $apiError = null;
 
-        if (!empty($fonnteToken)) {
+        if (! empty($fonnteToken)) {
             try {
                 $response = Http::withHeaders([
                     'Authorization' => $fonnteToken,
@@ -43,7 +44,7 @@ class WhatsAppService
                     $apiError = $data['reason'] ?? $data['detail'] ?? 'Gagal mengirim via Fonnte API';
                 }
             } catch (\Exception $e) {
-                Log::error('Fonnte API Error: ' . $e->getMessage());
+                Log::error('Fonnte API Error: '.$e->getMessage());
                 $apiError = $e->getMessage();
             }
         }

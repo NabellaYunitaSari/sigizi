@@ -87,6 +87,13 @@ class IbuHamilController extends Controller
     {
         $user = Auth::user();
 
+        if ($user && $user->role === 'kader') {
+            if ($request->wantsJson()) {
+                return response()->json(['error' => 'Akses ditolak. Hanya Koordinator dan Admin yang dapat menambahkan data sasaran.'], 403);
+            }
+            abort(403, 'Akses ditolak. Hanya Koordinator dan Admin yang dapat menambahkan data sasaran.');
+        }
+
         $request->validate([
             'nik' => 'required|string|unique:ibu_hamils,nik',
             'nama' => 'required|string',

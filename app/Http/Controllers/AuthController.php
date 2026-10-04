@@ -21,8 +21,10 @@ class AuthController extends Controller
             if ($user->role === 'admin' || $user->role === 'koordinator') {
                 return redirect()->route('dashboard.desa');
             }
+
             return redirect()->route('dashboard');
         }
+
         return Inertia::render('Auth/Login');
     }
 
@@ -42,10 +44,11 @@ class AuthController extends Controller
             ->orWhere('no_hp', $formattedPhone)
             ->first();
 
-        if (!$user || !Hash::check($request->password, $user->password)) {
+        if (! $user || ! Hash::check($request->password, $user->password)) {
             if ($request->wantsJson()) {
                 return response()->json(['error' => 'Nomor HP / Username atau kata sandi salah'], 401);
             }
+
             return back()->withErrors(['error' => 'Nomor HP / Username atau kata sandi salah']);
         }
 
@@ -71,6 +74,7 @@ class AuthController extends Controller
         if ($user->role === 'admin' || $user->role === 'koordinator') {
             return redirect()->route('dashboard.desa');
         }
+
         return redirect()->route('dashboard');
     }
 
@@ -91,6 +95,7 @@ class AuthController extends Controller
     {
         if (Auth::check()) {
             $user = Auth::user();
+
             return response()->json([
                 'authenticated' => true,
                 'user' => [
@@ -126,7 +131,7 @@ class AuthController extends Controller
                 ->orWhere('no_hp', $formattedPhone)
                 ->first();
 
-            if (!$user) {
+            if (! $user) {
                 return response()->json(['error' => 'Nomor WhatsApp tidak terdaftar di sistem SIGIZI'], 404);
             }
 
@@ -165,12 +170,12 @@ class AuthController extends Controller
                 ->orderBy('created_at', 'desc')
                 ->first();
 
-            if (!$otpRecord) {
+            if (! $otpRecord) {
                 return response()->json(['error' => 'Kode OTP verifikasi tidak valid atau telah kadaluarsa'], 400);
             }
 
             $user = User::where('no_hp', $formattedPhone)->first();
-            if (!$user) {
+            if (! $user) {
                 return response()->json(['error' => 'User tidak ditemukan'], 404);
             }
 

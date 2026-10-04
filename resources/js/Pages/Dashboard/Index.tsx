@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Link, usePage } from '@inertiajs/react';
 import AppShell from '../../Components/AppShell';
 import {
@@ -19,6 +19,7 @@ import {
   Utensils,
   Phone,
   ShieldAlert,
+  Filter,
 } from 'lucide-react';
 import {
   ResponsiveContainer,
@@ -35,8 +36,40 @@ import {
 import { getStatusBadgeColor } from '../../lib/statusGizi';
 import { UserSession } from '../../Components/Navbar';
 
+const CURRENT_YEAR = new Date().getFullYear();
+const YEAR_OPTIONS = [
+  (CURRENT_YEAR - 2).toString(),
+  (CURRENT_YEAR - 1).toString(),
+  CURRENT_YEAR.toString(),
+  (CURRENT_YEAR + 1).toString(),
+];
+
+const MONTH_OPTIONS = [
+  { value: '1', label: 'Januari' },
+  { value: '2', label: 'Februari' },
+  { value: '3', label: 'Maret' },
+  { value: '4', label: 'April' },
+  { value: '5', label: 'Mei' },
+  { value: '6', label: 'Juni' },
+  { value: '7', label: 'Juli' },
+  { value: '8', label: 'Agustus' },
+  { value: '9', label: 'September' },
+  { value: '10', label: 'Oktober' },
+  { value: '11', label: 'November' },
+  { value: '12', label: 'Desember' },
+];
+
+const getPeriodLabel = (month: string, year: string) => {
+  if (month === 'all' && year === 'all') return 'Semua Periode';
+  if (month === 'all') return `Tahun ${year}`;
+  const mName = MONTH_OPTIONS.find((m) => m.value === month)?.label || '';
+  if (year === 'all') return `Bulan ${mName}`;
+  return `${mName} ${year}`;
+};
+
 interface DashboardProps {
   childrenInPos: any[];
+  bumilList?: any[];
   totalAnak: number;
   countMeasured: number;
   progressPercent: number;
@@ -74,6 +107,8 @@ interface DashboardProps {
 }
 
 export default function Dashboard({
+  childrenInPos = [],
+  bumilList = [],
   totalAnak = 0,
   countMeasured = 0,
   progressPercent = 0,
@@ -98,6 +133,286 @@ export default function Dashboard({
 
   // Tab State for PMT Section at the bottom
   const [activePmtTab, setActivePmtTab] = useState<'anak' | 'bumil'>('anak');
+
+  // Filter States for 4 Charts (Bulan & Tahun)
+  const [chart1Month, setChart1Month] = useState<string>('all');
+  const [chart1Year, setChart1Year] = useState<string>('all');
+
+  const [chart2Month, setChart2Month] = useState<string>('all');
+  const [chart2Year, setChart2Year] = useState<string>('all');
+
+  const [chart3Month, setChart3Month] = useState<string>('all');
+  const [chart3Year, setChart3Year] = useState<string>('all');
+
+  const [chart4Month, setChart4Month] = useState<string>('all');
+  const [chart4Year, setChart4Year] = useState<string>('all');
+
+  // Filtered Chart 1: Komposisi Balita (Jenis Kelamin)
+  const filteredGenderData = useMemo(() => {
+    if (chart1Month === 'all' && chart1Year === 'all' && genderCompositionData && genderCompositionData.length > 0) {
+      return {
+        total: totalAnak,
+        data: genderCompositionData,
+      };
+    }
+
+    let list = childrenInPos || [];
+    if (chart1Month !== 'all' || chart1Year !== 'all') {
+      list = list.filter((child: any) => {
+        return child.pengukuran?.some((p: any) => {
+          if (!p.tanggal_ukur) return false;
+          const d = new Date(p.tanggal_ukur);
+          const m = (d.getMonth() + 1).toString();
+          const y = d.getFullYear().toString();
+          const matchM = chart1Month === 'all' || m === chart1Month;
+          const matchY = chart1Year === 'all' || y === chart1Year;
+          return matchM && matchY;
+        });
+      });
+    }
+
+    const countL = list.filter((c: any) => c.jenis_kelamin === 'L').length;
+    const countP = list.filter((c: any) => c.jenis_kelamin === 'P').length;
+    const total = list.length;
+    const pctL = total > 0 ? Number(((countL / total) * 100).toFixed(1)) : 0;
+    const pctP = total > 0 ? Number(((countP / total) * 100).toFixed(1)) : 0;
+
+    return {
+      total,
+      data: [
+        { name: 'Laki-laki', value: countL, percentage: pctL, color: '#3b82f6' },
+        { name: 'Perempuan', value: countP, percentage: pctP, color: '#ec4899' },
+      ],
+    };
+  }, [childrenInPos, totalAnak, genderCompositionData, chart1Month, chart1Year]);
+
+  // Filtered Chart 2: Status Pertumbuhan Balita
+  const filteredGrowthData = useMemo(() => {
+    if (chart2Month === 'all' && chart2Year === 'all' && growthStatusChartData && growthStatusChartData.length > 0) {
+      return growthStatusChartData;
+    }
+
+    const categories: Record<string, any[]> = {
+      'Normal': [],
+      'Berat Badan Kurang': [],
+      'Berat Badan Sangat Kurang': [],
+      'Tinggi Badan Kurang': [],
+      'Tinggi Badan Sangat Kurang': [],
+      'Terindikasi Stunting': [],
+    };
+
+    (childrenInPos || []).forEach((child: any) => {
+      let targetMeasurement: any = null;
+      if (chart2Month === 'all' && chart2Year === 'all') {
+        targetMeasurement = child.pengukuran?.[0];
+      } else {
+        targetMeasurement = child.pengukuran?.find((p: any) => {
+          if (!p.tanggal_ukur) return false;
+          const d = new Date(p.tanggal_ukur);
+          const m = (d.getMonth() + 1).toString();
+          const y = d.getFullYear().toString();
+          const matchM = chart2Month === 'all' || m === chart2Month;
+          const matchY = chart2Year === 'all' || y === chart2Year;
+          return matchM && matchY;
+        });
+      }
+
+      if (!targetMeasurement) return;
+
+      const childSummary = {
+        id: child.id,
+        nama_anak: child.nama_anak,
+        jenis_kelamin: child.jenis_kelamin,
+        nama_ibu: child.nama_ibu,
+        tanggal_lahir: child.tanggal_lahir,
+        umur_bulan: targetMeasurement.umur_bulan ?? 0,
+        berat_kg: targetMeasurement.berat_kg ?? 0,
+        tinggi_cm: targetMeasurement.tinggi_cm ?? 0,
+        status_bbu: targetMeasurement.status_bbu ?? 'Belum Diukur',
+        status_tbu: targetMeasurement.status_tbu ?? 'Belum Diukur',
+        status_bbtb: targetMeasurement.status_bbtb ?? 'Belum Diukur',
+        tanggal_ukur: targetMeasurement.tanggal_ukur ?? '-',
+      };
+
+      const bbu = targetMeasurement.status_bbu;
+      const tbu = targetMeasurement.status_tbu;
+      let isNormal = true;
+
+      if (bbu === 'Gizi Kurang' || bbu === 'Berat Badan Kurang') {
+        categories['Berat Badan Kurang'].push(childSummary);
+        isNormal = false;
+      }
+      if (bbu === 'Gizi Buruk' || bbu === 'Berat Badan Sangat Kurang') {
+        categories['Berat Badan Sangat Kurang'].push(childSummary);
+        isNormal = false;
+      }
+      if (tbu === 'Pendek') {
+        categories['Tinggi Badan Kurang'].push(childSummary);
+        isNormal = false;
+      }
+      if (tbu === 'Sangat Pendek') {
+        categories['Tinggi Badan Sangat Kurang'].push(childSummary);
+        isNormal = false;
+      }
+      if (tbu === 'Pendek' || tbu === 'Sangat Pendek') {
+        categories['Terindikasi Stunting'].push(childSummary);
+        isNormal = false;
+      }
+      if (isNormal) {
+        categories['Normal'].push(childSummary);
+      }
+    });
+
+    return [
+      { name: 'Normal', fullName: 'Normal', count: categories['Normal'].length, children: categories['Normal'], color: '#10b981' },
+      { name: 'BB Kurang', fullName: 'Berat Badan Kurang', count: categories['Berat Badan Kurang'].length, children: categories['Berat Badan Kurang'], color: '#f59e0b' },
+      { name: 'BB Sangat Kurang', fullName: 'Berat Badan Sangat Kurang', count: categories['Berat Badan Sangat Kurang'].length, children: categories['Berat Badan Sangat Kurang'], color: '#ef4444' },
+      { name: 'TB Kurang', fullName: 'Tinggi Badan Kurang', count: categories['Tinggi Badan Kurang'].length, children: categories['Tinggi Badan Kurang'], color: '#fb923c' },
+      { name: 'TB Sangat Kurang', fullName: 'Tinggi Badan Sangat Kurang', count: categories['Tinggi Badan Sangat Kurang'].length, children: categories['Tinggi Badan Sangat Kurang'], color: '#dc2626' },
+      { name: 'Stunting', fullName: 'Terindikasi Stunting', count: categories['Terindikasi Stunting'].length, children: categories['Terindikasi Stunting'], color: '#b91c1c' },
+    ];
+  }, [childrenInPos, growthStatusChartData, chart2Month, chart2Year]);
+
+  const filteredGrowthTotal = useMemo(() => {
+    return filteredGrowthData.reduce((acc, curr) => acc + curr.count, 0);
+  }, [filteredGrowthData]);
+
+  // Filtered Chart 3: Cakupan Imunisasi Balita
+  const filteredImmunizationData = useMemo(() => {
+    if (chart3Month === 'all' && chart3Year === 'all' && immunizationChartData && immunizationChartData.length > 0) {
+      return immunizationChartData;
+    }
+
+    const standardImmunizations = [
+      'HB-0',
+      'BCG',
+      'Polio 1',
+      'DPT 1',
+      'Polio 2',
+      'Campak / MR',
+    ];
+
+    const totalChildren = (childrenInPos || []).length;
+
+    return standardImmunizations.map((vax) => {
+      let receivedCount = 0;
+
+      (childrenInPos || []).forEach((c: any) => {
+        const hasVax = (c.imunisasi || []).some((im: any) => {
+          const nameMatch =
+            im.jenis_imunisasi?.toLowerCase().includes(vax.toLowerCase()) ||
+            vax.toLowerCase().includes(im.jenis_imunisasi?.toLowerCase());
+          if (!nameMatch) return false;
+
+          if (chart3Month === 'all' && chart3Year === 'all') return true;
+
+          const dateStr = im.tanggal || im.created_at;
+          if (!dateStr) return true;
+          const d = new Date(dateStr);
+          const m = (d.getMonth() + 1).toString();
+          const y = d.getFullYear().toString();
+          const matchM = chart3Month === 'all' || m === chart3Month;
+          const matchY = chart3Year === 'all' || y === chart3Year;
+          return matchM && matchY;
+        });
+
+        if (hasVax) receivedCount++;
+      });
+
+      const unreceivedCount = Math.max(0, totalChildren - receivedCount);
+      const percentage = totalChildren > 0 ? Math.round((receivedCount / totalChildren) * 100) : 0;
+
+      return {
+        name: vax,
+        sudah: receivedCount,
+        belum: unreceivedCount,
+        percentage,
+        total: totalChildren,
+      };
+    });
+  }, [childrenInPos, immunizationChartData, chart3Month, chart3Year]);
+
+  // Filtered Chart 4: Distribusi Ibu Hamil
+  const filteredTrimesterData = useMemo(() => {
+    if (chart4Month === 'all' && chart4Year === 'all' && trimesterChartData && trimesterChartData.length > 0) {
+      return {
+        total: totalBumil,
+        data: trimesterChartData,
+      };
+    }
+
+    const counts = {
+      'Trimester 1': 0,
+      'Trimester 2': 0,
+      'Trimester 3': 0,
+    };
+    let activeBumilCount = 0;
+
+    (bumilList || []).forEach((b: any) => {
+      let weeks = 0;
+      let included = false;
+
+      if (chart4Month === 'all' && chart4Year === 'all') {
+        included = true;
+        const lastP = b.pengukuran?.[0];
+        if (lastP && lastP.usia_kehamilan_minggu > 0) {
+          weeks = Number(lastP.usia_kehamilan_minggu);
+        } else if (b.hpht) {
+          const hphtDate = new Date(b.hpht).getTime();
+          const now = new Date().getTime();
+          const diffDays = Math.floor((now - hphtDate) / (1000 * 60 * 60 * 24));
+          weeks = Math.floor(diffDays / 7);
+        }
+      } else {
+        const matchingExam = b.pengukuran?.find((p: any) => {
+          if (!p.tanggal_periksa) return false;
+          const d = new Date(p.tanggal_periksa);
+          const m = (d.getMonth() + 1).toString();
+          const y = d.getFullYear().toString();
+          const matchM = chart4Month === 'all' || m === chart4Month;
+          const matchY = chart4Year === 'all' || y === chart4Year;
+          return matchM && matchY;
+        });
+
+        if (matchingExam && matchingExam.usia_kehamilan_minggu > 0) {
+          weeks = Number(matchingExam.usia_kehamilan_minggu);
+          included = true;
+        } else if (b.hpht) {
+          const targetYear = chart4Year !== 'all' ? parseInt(chart4Year) : new Date().getFullYear();
+          const targetMonth = chart4Month !== 'all' ? parseInt(chart4Month) - 1 : new Date().getMonth();
+          const targetDate = new Date(targetYear, targetMonth, 15).getTime();
+          const hphtDate = new Date(b.hpht).getTime();
+          const diffDays = Math.floor((targetDate - hphtDate) / (1000 * 60 * 60 * 24));
+          const calculatedWeeks = Math.floor(diffDays / 7);
+
+          if (calculatedWeeks >= 0 && calculatedWeeks <= 42) {
+            weeks = calculatedWeeks;
+            included = true;
+          }
+        }
+      }
+
+      if (included && weeks >= 0) {
+        activeBumilCount++;
+        if (weeks <= 13) {
+          counts['Trimester 1']++;
+        } else if (weeks <= 27) {
+          counts['Trimester 2']++;
+        } else {
+          counts['Trimester 3']++;
+        }
+      }
+    });
+
+    return {
+      total: activeBumilCount,
+      data: [
+        { name: 'Trimester 1', desc: 'Usia Kehamilan 1-13 Minggu', count: counts['Trimester 1'], color: '#8b5cf6' },
+        { name: 'Trimester 2', desc: 'Usia Kehamilan 14-27 Minggu', count: counts['Trimester 2'], color: '#ec4899' },
+        { name: 'Trimester 3', desc: 'Usia Kehamilan 28+ Minggu', count: counts['Trimester 3'], color: '#f43f5e' },
+      ],
+    };
+  }, [bumilList, totalBumil, trimesterChartData, chart4Month, chart4Year]);
 
   // Tooltips
   const GenderTooltip = ({ active, payload }: any) => {
@@ -181,7 +496,7 @@ export default function Dashboard({
           </p>
         </div>
 
-        {/* Welcome Banner Banner Box (matching mockup) */}
+        {/* Welcome Banner Box (matching mockup) */}
         <div className="bg-gradient-to-r from-blue-50/90 via-sky-50/70 to-indigo-50/50 p-5 rounded-2xl border border-blue-100 shadow-sm flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div className="space-y-1">
             <h2 className="text-base sm:text-lg font-bold text-slate-900 flex items-center gap-2">
@@ -283,26 +598,50 @@ export default function Dashboard({
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* CHART 1: Komposisi Balita (Donut Chart matching mockup) */}
           <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm space-y-4 flex flex-col justify-between">
-            <div>
-              <div className="flex items-center justify-between">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-100">
+              <div>
                 <h3 className="font-bold text-slate-900 text-base flex items-center gap-2">
                   <Users className="w-5 h-5 text-brand-600" />
                   <span>Komposisi Balita</span>
                 </h3>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  Berdasarkan jenis kelamin • {filteredGenderData.total} balita ({getPeriodLabel(chart1Month, chart1Year)})
+                </p>
               </div>
-              <p className="text-xs text-slate-500 mt-0.5">
-                Berdasarkan jenis kelamin • {totalAnak} balita
-              </p>
+
+              {/* Filter Bulan & Tahun */}
+              <div className="flex items-center gap-1.5 self-start sm:self-auto shrink-0">
+                <select
+                  value={chart1Month}
+                  onChange={(e) => setChart1Month(e.target.value)}
+                  className="text-xs font-semibold bg-slate-50 border border-slate-200 text-slate-700 rounded-lg px-2.5 py-1.5 focus:ring-2 focus:ring-brand-500 focus:outline-none cursor-pointer hover:bg-slate-100 transition-colors"
+                >
+                  <option value="all">Semua Bulan</option>
+                  {MONTH_OPTIONS.map((m) => (
+                    <option key={m.value} value={m.value}>{m.label}</option>
+                  ))}
+                </select>
+                <select
+                  value={chart1Year}
+                  onChange={(e) => setChart1Year(e.target.value)}
+                  className="text-xs font-semibold bg-slate-50 border border-slate-200 text-slate-700 rounded-lg px-2.5 py-1.5 focus:ring-2 focus:ring-brand-500 focus:outline-none cursor-pointer hover:bg-slate-100 transition-colors"
+                >
+                  <option value="all">Semua Tahun</option>
+                  {YEAR_OPTIONS.map((y) => (
+                    <option key={y} value={y}>{y}</option>
+                  ))}
+                </select>
+              </div>
             </div>
 
-            {totalAnak > 0 ? (
+            {filteredGenderData.total > 0 ? (
               <div className="flex flex-col sm:flex-row items-center justify-center gap-6 my-2">
                 {/* Donut Graphic */}
                 <div className="w-44 h-44 relative shrink-0">
                   <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
                       <Pie
-                        data={genderCompositionData}
+                        data={filteredGenderData.data}
                         cx="50%"
                         cy="50%"
                         innerRadius={50}
@@ -310,7 +649,7 @@ export default function Dashboard({
                         paddingAngle={3}
                         dataKey="value"
                       >
-                        {genderCompositionData.map((entry, index) => (
+                        {filteredGenderData.data.map((entry, index) => (
                           <Cell key={`cell-${index}`} fill={entry.color} />
                         ))}
                       </Pie>
@@ -320,14 +659,14 @@ export default function Dashboard({
 
                   {/* Center Text inside Donut */}
                   <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                    <span className="text-2xl font-black text-slate-900">{totalAnak}</span>
+                    <span className="text-2xl font-black text-slate-900">{filteredGenderData.total}</span>
                     <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Balita</span>
                   </div>
                 </div>
 
                 {/* Legend Details */}
                 <div className="space-y-3.5 w-full sm:w-auto">
-                  {genderCompositionData.map((g) => (
+                  {filteredGenderData.data.map((g) => (
                     <div key={g.name} className="flex items-center justify-between sm:justify-start gap-4">
                       <div className="flex items-center gap-2">
                         <span className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: g.color }} />
@@ -344,66 +683,101 @@ export default function Dashboard({
             ) : (
               <div className="h-44 flex flex-col items-center justify-center text-center p-6 border-2 border-dashed border-slate-200 rounded-2xl">
                 <Users className="w-8 h-8 text-slate-300 mb-2" />
-                <p className="text-sm font-semibold text-slate-600">Belum ada data balita</p>
+                <p className="text-sm font-semibold text-slate-600">Belum ada data balita pada periode ini</p>
+                <p className="text-xs text-slate-400 mt-1">Pilih periode lain atau atur ke Semua Periode</p>
               </div>
             )}
           </div>
 
           {/* CHART 2: Status Pertumbuhan Balita (Bar Chart + Clickable Bars) */}
           <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm space-y-4 flex flex-col justify-between">
-            <div>
-              <div className="flex items-center justify-between">
-                <h3 className="font-bold text-slate-900 text-base flex items-center gap-2">
-                  <BarChart3 className="w-5 h-5 text-emerald-600" />
-                  <span>Status Pertumbuhan Balita</span>
-                </h3>
-                <span className="text-[10px] font-bold px-2 py-0.5 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-full flex items-center gap-1">
-                  <Info className="w-3 h-3" />
-                  <span>Klik Bar untuk List</span>
-                </span>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-100">
+              <div>
+                <div className="flex items-center gap-2">
+                  <h3 className="font-bold text-slate-900 text-base flex items-center gap-2">
+                    <BarChart3 className="w-5 h-5 text-emerald-600" />
+                    <span>Status Pertumbuhan Balita</span>
+                  </h3>
+                  <span className="text-[10px] font-bold px-2 py-0.5 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-full flex items-center gap-1">
+                    <Info className="w-3 h-3" />
+                    <span>Klik Bar</span>
+                  </span>
+                </div>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  Pengukuran ({getPeriodLabel(chart2Month, chart2Year)}) • {filteredGrowthTotal} balita terukur
+                </p>
               </div>
-              <p className="text-xs text-slate-500 mt-0.5">
-                Interpretasi pengukuran terakhir (Klik bar grafik untuk detail nama balita)
-              </p>
+
+              {/* Filter Bulan & Tahun */}
+              <div className="flex items-center gap-1.5 self-start sm:self-auto shrink-0">
+                <select
+                  value={chart2Month}
+                  onChange={(e) => setChart2Month(e.target.value)}
+                  className="text-xs font-semibold bg-slate-50 border border-slate-200 text-slate-700 rounded-lg px-2.5 py-1.5 focus:ring-2 focus:ring-brand-500 focus:outline-none cursor-pointer hover:bg-slate-100 transition-colors"
+                >
+                  <option value="all">Semua Bulan</option>
+                  {MONTH_OPTIONS.map((m) => (
+                    <option key={m.value} value={m.value}>{m.label}</option>
+                  ))}
+                </select>
+                <select
+                  value={chart2Year}
+                  onChange={(e) => setChart2Year(e.target.value)}
+                  className="text-xs font-semibold bg-slate-50 border border-slate-200 text-slate-700 rounded-lg px-2.5 py-1.5 focus:ring-2 focus:ring-brand-500 focus:outline-none cursor-pointer hover:bg-slate-100 transition-colors"
+                >
+                  <option value="all">Semua Tahun</option>
+                  {YEAR_OPTIONS.map((y) => (
+                    <option key={y} value={y}>{y}</option>
+                  ))}
+                </select>
+              </div>
             </div>
 
-            <div className="h-52 w-full">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart
-                  data={growthStatusChartData}
-                  margin={{ top: 15, right: 10, left: -20, bottom: 25 }}
-                >
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                  <XAxis
-                    dataKey="name"
-                    tick={{ fontSize: 10, fill: '#64748b', fontWeight: 600 }}
-                    interval={0}
-                    angle={-20}
-                    textAnchor="end"
-                  />
-                  <YAxis allowDecimals={false} tick={{ fontSize: 11, fill: '#64748b' }} />
-                  <Tooltip content={<GrowthTooltip />} />
-                  <Bar
-                    dataKey="count"
-                    radius={[6, 6, 0, 0]}
-                    className="cursor-pointer transition-opacity hover:opacity-80"
-                    label={{ position: 'top', fill: '#334155', fontSize: 11, fontWeight: 'bold' }}
-                    onClick={(data) => {
-                      if (data && data.fullName) {
-                        setSelectedCategory({
-                          fullName: data.fullName,
-                          children: data.children || [],
-                        });
-                      }
-                    }}
+            {filteredGrowthTotal > 0 ? (
+              <div className="h-52 w-full">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart
+                    data={filteredGrowthData}
+                    margin={{ top: 15, right: 10, left: -20, bottom: 25 }}
                   >
-                    {growthStatusChartData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.color} />
-                    ))}
-                  </Bar>
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                    <XAxis
+                      dataKey="name"
+                      tick={{ fontSize: 10, fill: '#64748b', fontWeight: 600 }}
+                      interval={0}
+                      angle={-20}
+                      textAnchor="end"
+                    />
+                    <YAxis allowDecimals={false} tick={{ fontSize: 11, fill: '#64748b' }} />
+                    <Tooltip content={<GrowthTooltip />} />
+                    <Bar
+                      dataKey="count"
+                      radius={[6, 6, 0, 0]}
+                      className="cursor-pointer transition-opacity hover:opacity-80"
+                      label={{ position: 'top', fill: '#334155', fontSize: 11, fontWeight: 'bold' }}
+                      onClick={(data) => {
+                        if (data && data.fullName) {
+                          setSelectedCategory({
+                            fullName: data.fullName,
+                            children: data.children || [],
+                          });
+                        }
+                      }}
+                    >
+                      {filteredGrowthData.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.color} />
+                      ))}
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            ) : (
+              <div className="h-52 flex flex-col items-center justify-center text-center p-6 border-2 border-dashed border-slate-200 rounded-2xl">
+                <BarChart3 className="w-8 h-8 text-slate-300 mb-2" />
+                <p className="text-sm font-semibold text-slate-600">Belum ada data pengukuran pada periode ini</p>
+                <p className="text-xs text-slate-400 mt-1">Pilih periode lain atau atur ke Semua Periode</p>
+              </div>
+            )}
           </div>
         </div>
 
@@ -413,23 +787,47 @@ export default function Dashboard({
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* CHART 3: Cakupan Imunisasi Balita (Horizontal Bar Chart matching mockup) */}
           <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm space-y-4 flex flex-col justify-between">
-            <div>
-              <div className="flex items-center justify-between">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-100">
+              <div>
                 <h3 className="font-bold text-slate-900 text-base flex items-center gap-2">
                   <Syringe className="w-5 h-5 text-teal-600" />
                   <span>Cakupan Imunisasi</span>
                 </h3>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  Jadwal imunisasi dasar • {getPeriodLabel(chart3Month, chart3Year)}
+                </p>
               </div>
-              <p className="text-xs text-slate-500 mt-0.5">
-                Persentase balita sesuai jadwal imunisasi dasar
-              </p>
+
+              {/* Filter Bulan & Tahun */}
+              <div className="flex items-center gap-1.5 self-start sm:self-auto shrink-0">
+                <select
+                  value={chart3Month}
+                  onChange={(e) => setChart3Month(e.target.value)}
+                  className="text-xs font-semibold bg-slate-50 border border-slate-200 text-slate-700 rounded-lg px-2.5 py-1.5 focus:ring-2 focus:ring-brand-500 focus:outline-none cursor-pointer hover:bg-slate-100 transition-colors"
+                >
+                  <option value="all">Semua Bulan</option>
+                  {MONTH_OPTIONS.map((m) => (
+                    <option key={m.value} value={m.value}>{m.label}</option>
+                  ))}
+                </select>
+                <select
+                  value={chart3Year}
+                  onChange={(e) => setChart3Year(e.target.value)}
+                  className="text-xs font-semibold bg-slate-50 border border-slate-200 text-slate-700 rounded-lg px-2.5 py-1.5 focus:ring-2 focus:ring-brand-500 focus:outline-none cursor-pointer hover:bg-slate-100 transition-colors"
+                >
+                  <option value="all">Semua Tahun</option>
+                  {YEAR_OPTIONS.map((y) => (
+                    <option key={y} value={y}>{y}</option>
+                  ))}
+                </select>
+              </div>
             </div>
 
             <div className="h-56 w-full">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart
                   layout="vertical"
-                  data={immunizationChartData}
+                  data={filteredImmunizationData}
                   margin={{ top: 5, right: 35, left: 25, bottom: 5 }}
                 >
                   <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#f1f5f9" />
@@ -460,23 +858,47 @@ export default function Dashboard({
 
           {/* CHART 4: Distribusi Ibu Hamil (Vertical Bar Chart matching mockup) */}
           <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm space-y-4 flex flex-col justify-between">
-            <div>
-              <div className="flex items-center justify-between">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-100">
+              <div>
                 <h3 className="font-bold text-slate-900 text-base flex items-center gap-2">
                   <Heart className="w-5 h-5 text-brand-600" />
                   <span>Distribusi Ibu Hamil</span>
                 </h3>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  {filteredTrimesterData.total} ibu hamil aktif • per trimester ({getPeriodLabel(chart4Month, chart4Year)})
+                </p>
               </div>
-              <p className="text-xs text-slate-500 mt-0.5">
-                {totalBumil} ibu hamil aktif • per trimester
-              </p>
+
+              {/* Filter Bulan & Tahun */}
+              <div className="flex items-center gap-1.5 self-start sm:self-auto shrink-0">
+                <select
+                  value={chart4Month}
+                  onChange={(e) => setChart4Month(e.target.value)}
+                  className="text-xs font-semibold bg-slate-50 border border-slate-200 text-slate-700 rounded-lg px-2.5 py-1.5 focus:ring-2 focus:ring-brand-500 focus:outline-none cursor-pointer hover:bg-slate-100 transition-colors"
+                >
+                  <option value="all">Semua Bulan</option>
+                  {MONTH_OPTIONS.map((m) => (
+                    <option key={m.value} value={m.value}>{m.label}</option>
+                  ))}
+                </select>
+                <select
+                  value={chart4Year}
+                  onChange={(e) => setChart4Year(e.target.value)}
+                  className="text-xs font-semibold bg-slate-50 border border-slate-200 text-slate-700 rounded-lg px-2.5 py-1.5 focus:ring-2 focus:ring-brand-500 focus:outline-none cursor-pointer hover:bg-slate-100 transition-colors"
+                >
+                  <option value="all">Semua Tahun</option>
+                  {YEAR_OPTIONS.map((y) => (
+                    <option key={y} value={y}>{y}</option>
+                  ))}
+                </select>
+              </div>
             </div>
 
-            {totalBumil > 0 ? (
+            {filteredTrimesterData.total > 0 ? (
               <div className="h-56 w-full">
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart
-                    data={trimesterChartData}
+                    data={filteredTrimesterData.data}
                     margin={{ top: 15, right: 20, left: -15, bottom: 20 }}
                   >
                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
@@ -492,7 +914,7 @@ export default function Dashboard({
                       barSize={42}
                       label={{ position: 'top', fill: '#334155', fontSize: 12, fontWeight: 'bold' }}
                     >
-                      {trimesterChartData.map((entry, index) => (
+                      {filteredTrimesterData.data.map((entry, index) => (
                         <Cell key={`cell-${index}`} fill={entry.color} />
                       ))}
                     </Bar>
@@ -502,7 +924,8 @@ export default function Dashboard({
             ) : (
               <div className="h-56 flex flex-col items-center justify-center text-center p-6 border-2 border-dashed border-slate-200 rounded-2xl">
                 <Heart className="w-8 h-8 text-slate-300 mb-2" />
-                <p className="text-sm font-semibold text-slate-600">Belum ada data ibu hamil</p>
+                <p className="text-sm font-semibold text-slate-600">Belum ada data ibu hamil pada periode ini</p>
+                <p className="text-xs text-slate-400 mt-1">Pilih periode lain atau atur ke Semua Periode</p>
               </div>
             )}
           </div>

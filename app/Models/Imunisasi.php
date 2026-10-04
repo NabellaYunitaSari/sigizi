@@ -11,6 +11,7 @@ class Imunisasi extends Model
     use HasFactory, HasUuids;
 
     protected $table = 'imunisasis';
+
     public $timestamps = false;
 
     protected $fillable = ['id', 'id_anak', 'jenis_imunisasi', 'tanggal', 'created_at'];
