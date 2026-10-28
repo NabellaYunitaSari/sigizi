@@ -21,8 +21,10 @@ export default function Sidebar({ user: propUser, mobile = false, onNavigate }: 
       { label: 'Dashboard', href: canManage ? '/dashboard-desa' : '/dashboard', icon: LayoutDashboard },
     ] },
     { label: 'Pelayanan', items: [
-      { label: 'Data balita', href: '/anak', icon: Baby },
-      { label: 'Data ibu hamil', href: '/ibu-hamil', icon: Heart },
+      ...(!canManage ? [
+        { label: 'Data balita', href: '/anak', icon: Baby },
+        { label: 'Data ibu hamil', href: '/ibu-hamil', icon: Heart },
+      ] : []),
       { label: 'Pengukuran', href: '/pengukuran', icon: Scale },
       { label: 'Imunisasi', href: '/imunisasi', icon: Syringe },
       { label: 'Vitamin', href: '/vitamin', icon: Pill },

@@ -23,28 +23,51 @@ export default function BottomNav({ user: propUser }: BottomNavProps) {
 
   const isKoordinatorOrAdmin = user.role === 'koordinator' || user.role === 'admin';
 
-  const navItems = [
-    {
-      label: 'Dashboard',
-      href: isKoordinatorOrAdmin ? '/dashboard-desa' : '/dashboard',
-      icon: isKoordinatorOrAdmin ? Building2 : LayoutDashboard,
-    },
-    {
-      label: 'Balita',
-      href: '/anak',
-      icon: Baby,
-    },
-    {
-      label: 'Ibu Hamil',
-      href: '/ibu-hamil',
-      icon: Heart,
-    },
-    {
-      label: 'Laporan',
-      href: '/laporan',
-      icon: FileSpreadsheet,
-    },
-  ];
+  const navItems = isKoordinatorOrAdmin
+    ? [
+        {
+          label: 'Dashboard',
+          href: '/dashboard-desa',
+          icon: Building2,
+        },
+        {
+          label: 'Pengukuran',
+          href: '/pengukuran',
+          icon: FileSpreadsheet,
+        },
+        {
+          label: 'Master Data',
+          href: '/master-data',
+          icon: Baby,
+        },
+        {
+          label: 'Laporan',
+          href: '/laporan',
+          icon: FileSpreadsheet,
+        },
+      ]
+    : [
+        {
+          label: 'Dashboard',
+          href: '/dashboard',
+          icon: LayoutDashboard,
+        },
+        {
+          label: 'Balita',
+          href: '/anak',
+          icon: Baby,
+        },
+        {
+          label: 'Ibu Hamil',
+          href: '/ibu-hamil',
+          icon: Heart,
+        },
+        {
+          label: 'Pengukuran',
+          href: '/pengukuran',
+          icon: FileSpreadsheet,
+        },
+      ];
 
   return (
     <nav aria-label="Navigasi cepat" className="app-bottom-nav md:hidden fixed bottom-0 left-0 right-0 z-40 bg-[#fffefa] border-t border-slate-200 px-2 pt-2 pb-[max(8px,env(safe-area-inset-bottom))]">

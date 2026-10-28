@@ -44,9 +44,16 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/anak', [AnakController::class, 'index'])->name('anak.index');
     Route::post('/anak', [AnakController::class, 'store'])->name('anak.store');
     Route::put('/anak/{id}', [AnakController::class, 'update'])->name('anak.update');
+    Route::delete('/anak/{id}', [AnakController::class, 'destroy'])->name('anak.destroy');
+    Route::post('/anak/{id}/restore', [AnakController::class, 'restore'])->name('anak.restore');
     Route::get('/anak/{id}', [AnakController::class, 'show'])->name('anak.show');
     Route::get('/anak/{id}/input', [AnakController::class, 'inputPage'])->name('anak.input');
     Route::post('/anak/{id}/pengukuran', [AnakController::class, 'storePengukuran'])->name('anak.pengukuran.store');
+
+    // Orang Tua Balita
+    Route::post('/orang-tua', [AnakController::class, 'storeOrangTua'])->name('orang-tua.store');
+    Route::put('/orang-tua/{id}', [AnakController::class, 'updateOrangTua'])->name('orang-tua.update');
+    Route::delete('/orang-tua/{id}', [AnakController::class, 'destroyOrangTua'])->name('orang-tua.destroy');
 
     // Pengukuran Balita Direct Input
     Route::get('/pengukuran', [AnakController::class, 'pengukuranPage'])->name('pengukuran.index');
@@ -54,13 +61,26 @@ Route::middleware(['auth'])->group(function () {
     Route::put('/pengukuran/{id}', [AnakController::class, 'updatePengukuranDirect'])->name('pengukuran.update');
     Route::delete('/pengukuran/{id}', [AnakController::class, 'destroyPengukuran'])->name('pengukuran.destroy');
 
-    // Ibu Hamil
+    // Ibu Hamil, Nifas, Menyusui
     Route::get('/ibu-hamil', [IbuHamilController::class, 'index'])->name('ibu-hamil.index');
     Route::post('/ibu-hamil', [IbuHamilController::class, 'store'])->name('ibu-hamil.store');
     Route::put('/ibu-hamil/{id}', [IbuHamilController::class, 'update'])->name('ibu-hamil.update');
+    Route::delete('/ibu-hamil/{id}', [IbuHamilController::class, 'destroy'])->name('ibu-hamil.destroy');
     Route::get('/ibu-hamil/{id}', [IbuHamilController::class, 'show'])->name('ibu-hamil.show');
     Route::get('/ibu-hamil/{id}/input', [IbuHamilController::class, 'inputPage'])->name('ibu-hamil.input');
     Route::post('/ibu-hamil/{id}/pengukuran', [IbuHamilController::class, 'storePengukuran'])->name('ibu-hamil.pengukuran.store');
+    Route::put('/ibu-hamil/pengukuran/{id}', [IbuHamilController::class, 'updatePengukuranDirect'])->name('ibu-hamil.pengukuran.update');
+    Route::delete('/ibu-hamil/pengukuran/{id}', [IbuHamilController::class, 'destroyPengukuranDirect'])->name('ibu-hamil.pengukuran.destroy');
+
+    // Kunjungan Nifas
+    Route::post('/ibu-hamil/nifas', [IbuHamilController::class, 'storeNifas'])->name('ibu-hamil.nifas.store');
+    Route::put('/ibu-hamil/nifas/{id}', [IbuHamilController::class, 'updateNifas'])->name('ibu-hamil.nifas.update');
+    Route::delete('/ibu-hamil/nifas/{id}', [IbuHamilController::class, 'destroyNifas'])->name('ibu-hamil.nifas.destroy');
+
+    // Pemantauan Menyusui
+    Route::post('/ibu-hamil/menyusui', [IbuHamilController::class, 'storeMenyusui'])->name('ibu-hamil.menyusui.store');
+    Route::put('/ibu-hamil/menyusui/{id}', [IbuHamilController::class, 'updateMenyusui'])->name('ibu-hamil.menyusui.update');
+    Route::delete('/ibu-hamil/menyusui/{id}', [IbuHamilController::class, 'destroyMenyusui'])->name('ibu-hamil.menyusui.destroy');
 
     // Imunisasi Balita
     Route::get('/imunisasi', [ImunisasiController::class, 'index'])->name('imunisasi.index');
@@ -107,6 +127,8 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/api/ibu-hamil', [IbuHamilController::class, 'store']);
     Route::get('/api/ibu-hamil/{id}', [IbuHamilController::class, 'show']);
     Route::post('/api/ibu-hamil/{id}/pengukuran', [IbuHamilController::class, 'storePengukuran']);
+    Route::post('/api/ibu-hamil/nifas', [IbuHamilController::class, 'storeNifas']);
+    Route::post('/api/ibu-hamil/menyusui', [IbuHamilController::class, 'storeMenyusui']);
 
     Route::get('/api/users', [UserController::class, 'index']);
     Route::post('/api/users', [UserController::class, 'store']);

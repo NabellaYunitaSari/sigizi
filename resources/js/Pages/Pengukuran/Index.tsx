@@ -14,10 +14,16 @@ import {
   ChevronRight,
   Activity,
   Baby,
+  Heart,
+  Stethoscope,
+  Smile,
+  ShieldAlert,
   Edit2,
+  TrendingUp,
 } from 'lucide-react';
 import { UserSession } from '../../Components/Navbar';
-import { calculateAgeInMonths, classifyNutritionStatus, getStatusBadgeColor } from '../../lib/statusGizi';
+import { getStatusBadgeColor } from '../../lib/statusGizi';
+import SearchableSelect, { SearchOption } from '../../Components/SearchableSelect';
 
 interface Child {
   id: string;
@@ -26,6 +32,7 @@ interface Child {
   jenis_kelamin: 'L' | 'P';
   tanggal_lahir: string;
   nama_ibu: string;
+  nama_ayah?: string;
   id_pos: string;
   posyandu?: { nama_pos: string };
 }
@@ -37,634 +44,1400 @@ interface PengukuranRecord {
   berat_kg: number;
   tinggi_cm: number;
   cara_ukur: string;
+  cara_ukur_berat?: string;
   lila_cm?: number | null;
+  lingkar_kepala_cm?: number | null;
+  pitting_edema_bilateral?: boolean;
   umur_bulan: number;
   status_bbu: string;
   status_tbu: string;
   status_bbtb: string;
+  naik_berat_badan?: string;
+  keterangan_naik_bb?: string;
+  kelas_balita?: boolean;
+  menerima_mbg?: boolean;
+  vitamin_a?: boolean;
   anak?: Child;
+  userInput?: { nama: string };
+}
+
+interface Bumil {
+  id: string;
+  nik: string;
+  nama: string;
+  nama_suami: string;
+  hpht?: string;
+  id_pos: string;
+  posyandu?: { nama_pos: string };
+}
+
+interface AncRecord {
+  id: string;
+  id_bumil: string;
+  tanggal_periksa: string;
+  usia_kehamilan_minggu: number;
+  berat_kg: number;
+  tinggi_cm?: number;
+  lila_cm: number;
+  tekanan_darah: string;
+  status_gizi_bumil: string;
+  tfu_cm?: number;
+  djj?: number;
+  presentasi_janin?: string;
+  usg?: boolean;
+  lab_hb?: number;
+  lab_protein_urine?: string;
+  lab_gula_sewaktu?: number;
+  menerima_mbg?: boolean;
+  tatalaksana_kek?: boolean;
+  konseling?: boolean;
+  keluhan?: string;
+  ibuHamil?: Bumil;
+  ibu_hamil?: Bumil;
+  userInput?: { nama: string };
+}
+
+interface NifasRecord {
+  id: string;
+  id_bumil: string;
+  tanggal_melahirkan: string;
+  tanggal_kunjungan: string;
+  periode_kf: string;
+  jenis_tenaga: string;
+  kesadaran: string;
+  tekanan_darah: string;
+  suhu_tubuh: string;
+  kondisi_payudara: string;
+  kontraksi_uterus: string;
+  warna_lokhia: string;
+  produksi_asi: string;
+  perdarahan_masif: boolean;
+  kejang: boolean;
+  syok: boolean;
+  frekuensi_pernafasan?: string;
+  bau_lokhia?: string;
+  perineum?: string;
+  vitamin_a_nifas?: boolean;
+  rencana_kb?: string;
+  keluhan?: string;
+  tindakan?: string;
+  bumil?: Bumil;
+  ibu_hamil?: Bumil;
+  userInput?: { nama: string };
+}
+
+interface MenyusuiRecord {
+  id: string;
+  id_bumil: string;
+  tanggal_pemantauan: string;
+  status_asi: string;
+  produksi_asi: string;
+  masalah_menyusui?: string;
+  konseling_asi: boolean;
+  asi_eksklusif: boolean;
+  keterangan?: string;
+  bumil?: Bumil;
+  ibu_hamil?: Bumil;
+  userInput?: { nama: string };
 }
 
 interface PengukuranPageProps {
   childrenList: Child[];
   pengukuranList?: PengukuranRecord[];
-  masterOptions?: any[];
+  bumilList?: Bumil[];
+  ancList?: AncRecord[];
+  nifasList?: NifasRecord[];
+  menyusuiList?: MenyusuiRecord[];
+  posyandus?: any[];
 }
 
-export default function Index({ childrenList = [], pengukuranList = [], masterOptions = [] }: PengukuranPageProps) {
+export default function Index({
+  childrenList = [],
+  pengukuranList = [],
+  bumilList = [],
+  ancList = [],
+  nifasList = [],
+  menyusuiList = [],
+  posyandus = [],
+}: PengukuranPageProps) {
   const page = usePage();
   const user = (page.props as any).auth?.user as UserSession | null;
-  const isKoordinatorOrAdmin = user?.role === 'koordinator' || user?.role === 'admin';
 
-  // Search filter
+  // Master Slide Bar: 'balita' | 'ibu'
+  const [mainTab, setMainTab] = useState<'balita' | 'ibu'>('balita');
+
+  // Sub Tab for Ibu: 'anc' | 'nifas' | 'menyusui'
+  const [ibuSubTab, setIbuSubTab] = useState<'anc' | 'nifas' | 'menyusui'>('anc');
+
   const [searchTerm, setSearchTerm] = useState('');
-  
-  // Modal state
-  const [showModal, setShowModal] = useState(false);
-  const [editingItem, setEditingItem] = useState<PengukuranRecord | null>(null);
-  const [selectedChild, setSelectedChild] = useState<Child | null>(null);
-  const [childSearchQuery, setChildSearchQuery] = useState('');
-  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [posyanduFilter, setPosyanduFilter] = useState('');
 
-  // Modal quick-add master standard
-  const [showMasterModal, setShowMasterModal] = useState(false);
-  const [newMasterName, setNewMasterName] = useState('');
-  const [newMasterKet, setNewMasterKet] = useState('');
-  const [submittingMaster, setSubmittingMaster] = useState(false);
+  // Search Options for SearchableSelect
+  const childOptions: SearchOption[] = useMemo(() => {
+    return childrenList.map((c) => ({
+      id: c.id,
+      title: c.nama_anak,
+      subtitle: `NIK: ${c.nik} | Ibu: ${c.nama_ibu || '-'}${c.nama_ayah ? ` | Ayah: ${c.nama_ayah}` : ''}`,
+      badge: c.posyandu?.nama_pos ? `Pos ${c.posyandu.nama_pos}` : undefined,
+    }));
+  }, [childrenList]);
 
-  // Form fields
-  const [tanggalUkur, setTanggalUkur] = useState(new Date().toISOString().split('T')[0]);
-  const [beratKg, setBeratKg] = useState('');
-  const [tinggiCm, setTinggiCm] = useState('');
-  const [caraUkur, setCaraUkur] = useState<'telentang' | 'berdiri'>('telentang');
-  const [lilaCm, setLilaCm] = useState('');
+  const bumilOptions: SearchOption[] = useMemo(() => {
+    return bumilList.map((b) => ({
+      id: b.id,
+      title: b.nama,
+      subtitle: `NIK: ${b.nik} | Suami: ${b.nama_suami || '-'}`,
+      badge: b.posyandu?.nama_pos ? `Pos ${b.posyandu.nama_pos}` : undefined,
+    }));
+  }, [bumilList]);
 
-  const [submitting, setSubmitting] = useState(false);
-  const [error, setError] = useState('');
-  const [successMsg, setSuccessMsg] = useState('');
+  // ==========================================================
+  // 1. BALITA MEASUREMENT MODAL & ACTIONS
+  // ==========================================================
+  const [showChildMeasureModal, setShowChildMeasureModal] = useState(false);
+  const [childMeasureSubmitting, setChildMeasureSubmitting] = useState(false);
+  const [childMeasureError, setChildMeasureError] = useState('');
+  const [editingChildMeasureId, setEditingChildMeasureId] = useState<string | null>(null);
 
-  // Autocomplete child search in modal (search by name initial, e.g. "N")
-  const filteredChildrenForInput = useMemo(() => {
-    if (!childSearchQuery.trim()) return childrenList.slice(0, 10);
-    const q = childSearchQuery.toLowerCase();
-    return childrenList.filter(
-      (c) =>
-        c.nama_anak.toLowerCase().includes(q) ||
-        c.nik.includes(q) ||
-        (c.nama_ibu && c.nama_ibu.toLowerCase().includes(q))
-    );
-  }, [childrenList, childSearchQuery]);
+  const [childMeasureForm, setChildMeasureForm] = useState({
+    id_anak: '',
+    tanggal_ukur: new Date().toISOString().split('T')[0],
+    berat_kg: '',
+    tinggi_cm: '',
+    cara_ukur: 'telentang',
+    cara_ukur_berat: 'digital',
+    lila_cm: '',
+    lingkar_kepala_cm: '',
+    pitting_edema_bilateral: false,
+    naik_berat_badan: '',
+    keterangan_naik_bb: '',
+    kelas_balita: false,
+    menerima_mbg: false,
+    vitamin_a: false,
+  });
 
-  // Calculated age in months for selected child
-  const ageMonths = useMemo(() => {
-    if (!selectedChild) return 0;
-    return calculateAgeInMonths(selectedChild.tanggal_lahir, tanggalUkur);
-  }, [selectedChild, tanggalUkur]);
-
-  // Live Nutrition Status Preview
-  const liveStatus = useMemo(() => {
-    if (!selectedChild || !beratKg || !tinggiCm) return null;
-    const bb = parseFloat(beratKg);
-    const tb = parseFloat(tinggiCm);
-    if (isNaN(bb) || isNaN(tb) || bb <= 0 || tb <= 0) return null;
-
-    return classifyNutritionStatus(bb, tb, ageMonths, selectedChild.jenis_kelamin);
-  }, [selectedChild, beratKg, tinggiCm, ageMonths]);
-
-  // Filtered measurement history for table view
-  const filteredPengukuran = useMemo(() => {
-    if (!searchTerm.trim()) return pengukuranList;
-    const q = searchTerm.toLowerCase();
-    return pengukuranList.filter((item) => {
-      const childName = item.anak?.nama_anak?.toLowerCase() || '';
-      const posName = item.anak?.posyandu?.nama_pos?.toLowerCase() || '';
-      const nik = item.anak?.nik || '';
-      return childName.includes(q) || posName.includes(q) || nik.includes(q);
+  const openAddChildMeasure = () => {
+    setEditingChildMeasureId(null);
+    setChildMeasureForm({
+      id_anak: childrenList[0]?.id || '',
+      tanggal_ukur: new Date().toISOString().split('T')[0],
+      berat_kg: '',
+      tinggi_cm: '',
+      cara_ukur: 'telentang',
+      cara_ukur_berat: 'digital',
+      lila_cm: '',
+      lingkar_kepala_cm: '',
+      pitting_edema_bilateral: false,
+      naik_berat_badan: '',
+      keterangan_naik_bb: '',
+      kelas_balita: false,
+      menerima_mbg: false,
+      vitamin_a: false,
     });
-  }, [pengukuranList, searchTerm]);
-
-  const handleSelectChild = (child: Child) => {
-    setSelectedChild(child);
-    setChildSearchQuery(child.nama_anak);
-    setIsDropdownOpen(false);
-
-    // Auto set cara_ukur by age
-    const m = calculateAgeInMonths(child.tanggal_lahir, tanggalUkur);
-    setCaraUkur(m < 24 ? 'telentang' : 'berdiri');
+    setChildMeasureError('');
+    setShowChildMeasureModal(true);
   };
 
-  const handleOpenModalWithChild = (child?: Child) => {
-    setError('');
-    setSuccessMsg('');
-    setEditingItem(null);
-    if (child) {
-      handleSelectChild(child);
-    } else {
-      setSelectedChild(null);
-      setChildSearchQuery('');
-    }
-    setBeratKg('');
-    setTinggiCm('');
-    setLilaCm('');
-    setShowModal(true);
+  const openEditChildMeasure = (m: PengukuranRecord) => {
+    setEditingChildMeasureId(m.id);
+    setChildMeasureForm({
+      id_anak: m.id_anak,
+      tanggal_ukur: m.tanggal_ukur ? m.tanggal_ukur.split('T')[0] : '',
+      berat_kg: m.berat_kg.toString(),
+      tinggi_cm: m.tinggi_cm.toString(),
+      cara_ukur: m.cara_ukur || 'telentang',
+      cara_ukur_berat: m.cara_ukur_berat || 'digital',
+      lila_cm: m.lila_cm ? m.lila_cm.toString() : '',
+      lingkar_kepala_cm: m.lingkar_kepala_cm ? m.lingkar_kepala_cm.toString() : '',
+      pitting_edema_bilateral: !!m.pitting_edema_bilateral,
+      naik_berat_badan: m.naik_berat_badan || '',
+      keterangan_naik_bb: m.keterangan_naik_bb || '',
+      kelas_balita: !!m.kelas_balita,
+      menerima_mbg: !!m.menerima_mbg,
+      vitamin_a: !!m.vitamin_a,
+    });
+    setChildMeasureError('');
+    setShowChildMeasureModal(true);
   };
 
-  const handleOpenEditModal = (item: PengukuranRecord) => {
-    setError('');
-    setSuccessMsg('');
-    setEditingItem(item);
-    if (item.anak) {
-      setSelectedChild(item.anak);
-      setChildSearchQuery(item.anak.nama_anak);
-    }
-    setTanggalUkur(item.tanggal_ukur);
-    setCaraUkur(item.cara_ukur as any);
-    setBeratKg(item.berat_kg.toString());
-    setTinggiCm(item.tinggi_cm.toString());
-    setLilaCm(item.lila_cm ? item.lila_cm.toString() : '');
-    setShowModal(true);
-  };
-
-  const handleResetForm = () => {
-    setEditingItem(null);
-    setSelectedChild(null);
-    setChildSearchQuery('');
-    setBeratKg('');
-    setTinggiCm('');
-    setLilaCm('');
-    setError('');
-  };
-
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleChildMeasureSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!selectedChild) {
-      setError('Silakan pilih balita terlebih dahulu.');
+    if (!childMeasureForm.id_anak) {
+      setChildMeasureError('Silakan pilih balita terlebih dahulu.');
       return;
     }
-    if (!beratKg || !tinggiCm) {
-      setError('Berat badan dan tinggi badan wajib diisi.');
-      return;
-    }
+    setChildMeasureSubmitting(true);
+    setChildMeasureError('');
 
-    setSubmitting(true);
-    setError('');
-
-    const payload = {
-      id_anak: selectedChild.id,
-      tanggal_ukur: tanggalUkur,
-      berat_kg: parseFloat(beratKg),
-      tinggi_cm: parseFloat(tinggiCm),
-      cara_ukur: caraUkur,
-      lila_cm: lilaCm ? parseFloat(lilaCm) : null,
-    };
-
-    if (editingItem) {
-      router.put(`/pengukuran/${editingItem.id}`, payload, {
+    if (editingChildMeasureId) {
+      router.put(`/pengukuran/${editingChildMeasureId}`, childMeasureForm, {
+        preserveScroll: true,
         onSuccess: () => {
-          setSubmitting(false);
-          setShowModal(false);
-          handleResetForm();
-          setSuccessMsg(`Hasil pengukuran untuk ${selectedChild.nama_anak} berhasil diperbarui!`);
+          setShowChildMeasureModal(false);
+          setChildMeasureSubmitting(false);
+          setEditingChildMeasureId(null);
         },
         onError: (errs) => {
-          setSubmitting(false);
-          setError(Object.values(errs).join(', ') || 'Gagal memperbarui pengukuran.');
+          setChildMeasureError(Object.values(errs)[0] as string);
+          setChildMeasureSubmitting(false);
         },
       });
     } else {
-      router.post('/pengukuran', payload, {
+      router.post('/pengukuran', childMeasureForm, {
+        preserveScroll: true,
         onSuccess: () => {
-          setSubmitting(false);
-          setShowModal(false);
-          handleResetForm();
-          setSuccessMsg(`Hasil pengukuran untuk ${selectedChild.nama_anak} berhasil disimpan!`);
+          setShowChildMeasureModal(false);
+          setChildMeasureSubmitting(false);
         },
         onError: (errs) => {
-          setSubmitting(false);
-          setError(Object.values(errs).join(', ') || 'Gagal menyimpan pengukuran.');
+          setChildMeasureError(Object.values(errs)[0] as string);
+          setChildMeasureSubmitting(false);
         },
       });
     }
   };
 
-  const handleCreateNewMaster = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newMasterName.trim()) return;
-
-    setSubmittingMaster(true);
-    router.post('/kelola-standar', {
-      kategori: 'pengukuran',
-      nama: newMasterName.trim(),
-      keterangan: newMasterKet.trim(),
-    }, {
-      onSuccess: () => {
-        setNewMasterName('');
-        setNewMasterKet('');
-        setShowMasterModal(false);
-        setSuccessMsg(`Standar parameter baru "${newMasterName.trim()}" berhasil ditambahkan!`);
-      },
-      onFinish: () => setSubmittingMaster(false),
-    });
+  const handleDeleteChildMeasure = (id: string) => {
+    if (confirm('Yakin ingin menghapus data pengukuran balita ini?')) {
+      router.delete(`/pengukuran/${id}`, { preserveScroll: true });
+    }
   };
 
-  const handleDelete = (id: string, childName: string) => {
-    if (confirm(`Apakah Anda yakin ingin menghapus catatan pengukuran untuk ${childName}?`)) {
-      router.delete(`/pengukuran/${id}`, {
+  // Filtered Pengukuran Balita List
+  const filteredChildMeasures = useMemo(() => {
+    return pengukuranList.filter((m) => {
+      const matchSearch =
+        !searchTerm.trim() ||
+        m.anak?.nama_anak.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        m.anak?.nik.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (m.anak?.nama_ibu && m.anak.nama_ibu.toLowerCase().includes(searchTerm.toLowerCase()));
+
+      const matchPos = !posyanduFilter || m.anak?.id_pos === posyanduFilter;
+      return matchSearch && matchPos;
+    });
+  }, [pengukuranList, searchTerm, posyanduFilter]);
+
+  // ==========================================================
+  // 2. IBU HAMIL (ANC) MODAL & ACTIONS
+  // ==========================================================
+  const [showAncModal, setShowAncModal] = useState(false);
+  const [ancSubmitting, setAncSubmitting] = useState(false);
+  const [ancError, setAncError] = useState('');
+  const [editingAncId, setEditingAncId] = useState<string | null>(null);
+
+  const [ancForm, setAncForm] = useState({
+    id_bumil: '',
+    tanggal_periksa: new Date().toISOString().split('T')[0],
+    usia_kehamilan_minggu: '16',
+    berat_kg: '',
+    tinggi_cm: '155',
+    lila_cm: '',
+    tekanan_darah: '120/80',
+    tfu_cm: '',
+    presentasi_janin: 'Kepala',
+    djj: '140',
+    usg: false,
+    lab_hb: '12.0',
+    lab_protein_urine: 'Negatif (-)',
+    lab_gula_sewaktu: '95',
+    tatalaksana_kek: false,
+    menerima_mbg: false,
+    konseling: true,
+    keluhan: '',
+  });
+
+  const openAddAnc = () => {
+    setEditingAncId(null);
+    setAncForm({
+      id_bumil: bumilList[0]?.id || '',
+      tanggal_periksa: new Date().toISOString().split('T')[0],
+      usia_kehamilan_minggu: '16',
+      berat_kg: '',
+      tinggi_cm: '155',
+      lila_cm: '',
+      tekanan_darah: '120/80',
+      tfu_cm: '',
+      presentasi_janin: 'Kepala',
+      djj: '140',
+      usg: false,
+      lab_hb: '12.0',
+      lab_protein_urine: 'Negatif (-)',
+      lab_gula_sewaktu: '95',
+      tatalaksana_kek: false,
+      menerima_mbg: false,
+      konseling: true,
+      keluhan: '',
+    });
+    setAncError('');
+    setShowAncModal(true);
+  };
+
+  const openEditAnc = (a: AncRecord) => {
+    setEditingAncId(a.id);
+    setAncForm({
+      id_bumil: a.id_bumil,
+      tanggal_periksa: a.tanggal_periksa ? a.tanggal_periksa.split('T')[0] : '',
+      usia_kehamilan_minggu: a.usia_kehamilan_minggu.toString(),
+      berat_kg: a.berat_kg.toString(),
+      tinggi_cm: a.tinggi_cm ? a.tinggi_cm.toString() : '155',
+      lila_cm: a.lila_cm.toString(),
+      tekanan_darah: a.tekanan_darah,
+      tfu_cm: a.tfu_cm ? a.tfu_cm.toString() : '',
+      presentasi_janin: a.presentasi_janin || 'Kepala',
+      djj: a.djj ? a.djj.toString() : '140',
+      usg: !!a.usg,
+      lab_hb: a.lab_hb ? a.lab_hb.toString() : '12.0',
+      lab_protein_urine: a.lab_protein_urine || 'Negatif (-)',
+      lab_gula_sewaktu: a.lab_gula_sewaktu ? a.lab_gula_sewaktu.toString() : '95',
+      tatalaksana_kek: !!a.tatalaksana_kek,
+      menerima_mbg: !!a.menerima_mbg,
+      konseling: !!a.konseling,
+      keluhan: a.keluhan || '',
+    });
+    setAncError('');
+    setShowAncModal(true);
+  };
+
+  const handleAncSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!ancForm.id_bumil) {
+      setAncError('Silakan pilih ibu hamil sasaran.');
+      return;
+    }
+    setAncSubmitting(true);
+    setAncError('');
+
+    if (editingAncId) {
+      router.put(`/ibu-hamil/pengukuran/${editingAncId}`, ancForm, {
+        preserveScroll: true,
         onSuccess: () => {
-          setSuccessMsg('Catatan pengukuran berhasil dihapus.');
+          setShowAncModal(false);
+          setAncSubmitting(false);
+          setEditingAncId(null);
+        },
+        onError: (errs) => {
+          setAncError(Object.values(errs)[0] as string);
+          setAncSubmitting(false);
         },
       });
+    } else {
+      router.post(`/ibu-hamil/${ancForm.id_bumil}/pengukuran`, ancForm, {
+        preserveScroll: true,
+        onSuccess: () => {
+          setShowAncModal(false);
+          setAncSubmitting(false);
+        },
+        onError: (errs) => {
+          setAncError(Object.values(errs)[0] as string);
+          setAncSubmitting(false);
+        },
+      });
+    }
+  };
+
+  const handleDeleteAnc = (id: string) => {
+    if (confirm('Yakin ingin menghapus catatan pemeriksaan ANC ini?')) {
+      router.delete(`/ibu-hamil/pengukuran/${id}`, { preserveScroll: true });
+    }
+  };
+
+  // Filtered ANC List
+  const filteredAncList = useMemo(() => {
+    return ancList.filter((a) => {
+      const bumil = a.ibu_hamil || a.ibuHamil;
+      const matchSearch =
+        !searchTerm.trim() ||
+        (bumil?.nama && bumil.nama.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        (bumil?.nik && bumil.nik.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        (bumil?.nama_suami && bumil.nama_suami.toLowerCase().includes(searchTerm.toLowerCase()));
+
+      const matchPos = !posyanduFilter || bumil?.id_pos === posyanduFilter;
+      return matchSearch && matchPos;
+    });
+  }, [ancList, searchTerm, posyanduFilter]);
+
+  // ==========================================================
+  // 3. KUNJUNGAN NIFAS (KF1-KF4) MODAL & ACTIONS
+  // ==========================================================
+  const [showNifasModal, setShowNifasModal] = useState(false);
+  const [nifasSubmitting, setNifasSubmitting] = useState(false);
+  const [nifasError, setNifasError] = useState('');
+  const [editingNifasId, setEditingNifasId] = useState<string | null>(null);
+
+  const [nifasForm, setNifasForm] = useState({
+    id_bumil: '',
+    tanggal_melahirkan: new Date().toISOString().split('T')[0],
+    tanggal_kunjungan: new Date().toISOString().split('T')[0],
+    jenis_tenaga: 'Bidan',
+    kesadaran: 'Compos Mentis',
+    perdarahan_masif: false,
+    kejang: false,
+    syok: false,
+    tekanan_darah: '120/80',
+    suhu_tubuh: 'Normal (36-37,5 C)',
+    kondisi_payudara: 'Normal',
+    kontraksi_uterus: 'Baik',
+    warna_lokhia: 'Merah',
+    produksi_asi: 'Ada, Banyak',
+    buang_air_kecil: true,
+    buang_air_besar: true,
+    mood: 'Tidak Depresif',
+    diberikan_ttd: true,
+    diberikan_vit_a: true,
+    tempat: 'Puskesmas Sukomalo',
+  });
+
+  const openAddNifas = () => {
+    setEditingNifasId(null);
+    setNifasForm({
+      id_bumil: bumilList[0]?.id || '',
+      tanggal_melahirkan: new Date().toISOString().split('T')[0],
+      tanggal_kunjungan: new Date().toISOString().split('T')[0],
+      jenis_tenaga: 'Bidan',
+      kesadaran: 'Compos Mentis',
+      perdarahan_masif: false,
+      kejang: false,
+      syok: false,
+      tekanan_darah: '120/80',
+      suhu_tubuh: 'Normal (36-37,5 C)',
+      kondisi_payudara: 'Normal',
+      kontraksi_uterus: 'Baik',
+      warna_lokhia: 'Merah',
+      produksi_asi: 'Ada, Banyak',
+      buang_air_kecil: true,
+      buang_air_besar: true,
+      mood: 'Tidak Depresif',
+      diberikan_ttd: true,
+      diberikan_vit_a: true,
+      tempat: 'Puskesmas Sukomalo',
+    });
+    setNifasError('');
+    setShowNifasModal(true);
+  };
+
+  const openEditNifas = (kn: NifasRecord) => {
+    setEditingNifasId(kn.id);
+    setNifasForm({
+      id_bumil: kn.id_bumil,
+      tanggal_melahirkan: kn.tanggal_melahirkan ? kn.tanggal_melahirkan.split('T')[0] : '',
+      tanggal_kunjungan: kn.tanggal_kunjungan ? kn.tanggal_kunjungan.split('T')[0] : '',
+      jenis_tenaga: kn.jenis_tenaga || 'Bidan',
+      kesadaran: kn.kesadaran || 'Compos Mentis',
+      perdarahan_masif: !!kn.perdarahan_masif,
+      kejang: !!kn.kejang,
+      syok: !!kn.syok,
+      tekanan_darah: kn.tekanan_darah || '120/80',
+      suhu_tubuh: kn.suhu_tubuh || 'Normal (36-37,5 C)',
+      kondisi_payudara: kn.kondisi_payudara || 'Normal',
+      kontraksi_uterus: kn.kontraksi_uterus || 'Baik',
+      warna_lokhia: kn.warna_lokhia || 'Merah',
+      produksi_asi: kn.produksi_asi || 'Ada, Banyak',
+      buang_air_kecil: true,
+      buang_air_besar: true,
+      mood: 'Tidak Depresif',
+      diberikan_ttd: true,
+      diberikan_vit_a: !!kn.vitamin_a_nifas,
+      tempat: 'Puskesmas Sukomalo',
+    });
+    setNifasError('');
+    setShowNifasModal(true);
+  };
+
+  const handleNifasSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!nifasForm.id_bumil) {
+      setNifasError('Silakan pilih ibu sasaran.');
+      return;
+    }
+    setNifasSubmitting(true);
+    setNifasError('');
+
+    if (editingNifasId) {
+      router.put(`/ibu-hamil/nifas/${editingNifasId}`, nifasForm, {
+        preserveScroll: true,
+        onSuccess: () => {
+          setShowNifasModal(false);
+          setNifasSubmitting(false);
+          setEditingNifasId(null);
+        },
+        onError: (errs) => {
+          setNifasError(Object.values(errs)[0] as string);
+          setNifasSubmitting(false);
+        },
+      });
+    } else {
+      router.post('/ibu-hamil/nifas', nifasForm, {
+        preserveScroll: true,
+        onSuccess: () => {
+          setShowNifasModal(false);
+          setNifasSubmitting(false);
+        },
+        onError: (errs) => {
+          setNifasError(Object.values(errs)[0] as string);
+          setNifasSubmitting(false);
+        },
+      });
+    }
+  };
+
+  const handleDeleteNifas = (id: string) => {
+    if (confirm('Yakin ingin menghapus data kunjungan nifas ini?')) {
+      router.delete(`/ibu-hamil/nifas/${id}`, { preserveScroll: true });
+    }
+  };
+
+  // ==========================================================
+  // 4. PEMANTAUAN MENYUSUI MODAL & ACTIONS
+  // ==========================================================
+  const [showMenyusuiModal, setShowMenyusuiModal] = useState(false);
+  const [menyusuiSubmitting, setMenyusuiSubmitting] = useState(false);
+  const [menyusuiError, setMenyusuiError] = useState('');
+  const [editingMenyusuiId, setEditingMenyusuiId] = useState<string | null>(null);
+
+  const [menyusuiForm, setMenyusuiForm] = useState({
+    id_bumil: '',
+    tanggal_pemantauan: new Date().toISOString().split('T')[0],
+    status_asi: 'Ada',
+    produksi_asi: 'Banyak',
+    masalah_menyusui: 'Tidak ada',
+    konseling_asi: true,
+    asi_eksklusif: true,
+  });
+
+  const openAddMenyusui = () => {
+    setEditingMenyusuiId(null);
+    setMenyusuiForm({
+      id_bumil: bumilList[0]?.id || '',
+      tanggal_pemantauan: new Date().toISOString().split('T')[0],
+      status_asi: 'Ada',
+      produksi_asi: 'Banyak',
+      masalah_menyusui: 'Tidak ada',
+      konseling_asi: true,
+      asi_eksklusif: true,
+    });
+    setMenyusuiError('');
+    setShowMenyusuiModal(true);
+  };
+
+  const openEditMenyusui = (m: MenyusuiRecord) => {
+    setEditingMenyusuiId(m.id);
+    setMenyusuiForm({
+      id_bumil: m.id_bumil,
+      tanggal_pemantauan: m.tanggal_pemantauan ? m.tanggal_pemantauan.split('T')[0] : '',
+      status_asi: m.status_asi || 'Ada',
+      produksi_asi: m.produksi_asi || 'Banyak',
+      masalah_menyusui: m.masalah_menyusui || 'Tidak ada',
+      konseling_asi: !!m.konseling_asi,
+      asi_eksklusif: !!m.asi_eksklusif,
+    });
+    setMenyusuiError('');
+    setShowMenyusuiModal(true);
+  };
+
+  const handleMenyusuiSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!menyusuiForm.id_bumil) {
+      setMenyusuiError('Silakan pilih ibu sasaran.');
+      return;
+    }
+    setMenyusuiSubmitting(true);
+    setMenyusuiError('');
+
+    if (editingMenyusuiId) {
+      router.put(`/ibu-hamil/menyusui/${editingMenyusuiId}`, menyusuiForm, {
+        preserveScroll: true,
+        onSuccess: () => {
+          setShowMenyusuiModal(false);
+          setMenyusuiSubmitting(false);
+          setEditingMenyusuiId(null);
+        },
+        onError: (errs) => {
+          setMenyusuiError(Object.values(errs)[0] as string);
+          setMenyusuiSubmitting(false);
+        },
+      });
+    } else {
+      router.post('/ibu-hamil/menyusui', menyusuiForm, {
+        preserveScroll: true,
+        onSuccess: () => {
+          setShowMenyusuiModal(false);
+          setMenyusuiSubmitting(false);
+        },
+        onError: (errs) => {
+          setMenyusuiError(Object.values(errs)[0] as string);
+          setMenyusuiSubmitting(false);
+        },
+      });
+    }
+  };
+
+  const handleDeleteMenyusui = (id: string) => {
+    if (confirm('Yakin ingin menghapus data pemantauan menyusui ini?')) {
+      router.delete(`/ibu-hamil/menyusui/${id}`, { preserveScroll: true });
     }
   };
 
   return (
     <AppShell user={user}>
       <div className="space-y-6">
-        {/* Page Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        {/* Header & Page Title */}
+        <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100 flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
-            <h1 className="text-2xl sm:text-3xl font-semibold text-slate-900 tracking-tight">
-              Pencatatan Antropometri Balita
-            </h1>
-            <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
-              Kelola & catat hasil penimbangan berat badan dan tinggi badan balita
-            </p>
+            <div className="flex items-center gap-3">
+              <div className="p-3 bg-teal-50 text-teal-700 rounded-2xl">
+                <Scale className="w-6 h-6" />
+              </div>
+              <div>
+                <h1 className="text-2xl font-bold text-slate-800 tracking-tight">
+                  Pusat Pencatatan Pelayanan Posyandu
+                </h1>
+                <p className="text-slate-500 text-sm mt-0.5">
+                  Entri penimbangan antropometri balita dan pemeriksaan fisik lengkap ibu (ANC, Nifas, Menyusui)
+                </p>
+              </div>
+            </div>
           </div>
 
-          <div className="flex items-center gap-2">
-            {isKoordinatorOrAdmin && (
-              <button
-                onClick={() => setShowMasterModal(true)}
-                className="inline-flex items-center justify-center space-x-1.5 px-3.5 py-2.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200/80 font-bold text-xs rounded-xl transition-all min-h-[44px]"
-              >
-                <PlusCircle className="w-4 h-4 text-emerald-600" />
-                <span>+ Standar Parameter Baru</span>
-              </button>
-            )}
+          {/* Master Slide Bar Switcher */}
+          <div className="flex bg-slate-100 p-1.5 rounded-2xl border border-slate-200/80 shadow-inner">
+            <button
+              onClick={() => setMainTab('balita')}
+              className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-sm transition-all duration-200 shadow-sm ${
+                mainTab === 'balita'
+                  ? 'bg-teal-600 text-white shadow-teal-200'
+                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
+              }`}
+            >
+              <Baby className="w-4 h-4" />
+              Pengukuran Balita ({pengukuranList.length})
+            </button>
 
             <button
-              onClick={() => handleOpenModalWithChild()}
-              className="inline-flex items-center justify-center space-x-2 px-4 py-2.5 bg-brand-600 hover:bg-brand-700 text-white font-semibold text-sm rounded-xl transition-all shadow-md shadow-brand-600/20 min-h-[44px]"
+              onClick={() => setMainTab('ibu')}
+              className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-sm transition-all duration-200 shadow-sm ${
+                mainTab === 'ibu'
+                  ? 'bg-rose-600 text-white shadow-rose-200'
+                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
+              }`}
             >
-              <PlusCircle className="w-4 h-4" />
-              <span>Catat Pengukuran Baru</span>
+              <Heart className="w-4 h-4" />
+              Pemeriksaan Ibu ({ancList.length + nifasList.length + menyusuiList.length})
             </button>
           </div>
         </div>
 
-        {/* Success Alert */}
-        {successMsg && (
-          <div className="bg-brand-50 border border-brand-200 p-4 rounded-2xl text-xs text-brand-900 flex items-center justify-between gap-3 shadow-sm">
-            <div className="flex items-center space-x-2">
-              <CheckCircle2 className="w-5 h-5 text-brand-600 shrink-0" />
-              <span className="font-semibold">{successMsg}</span>
+        {/* Sub Switcher Jika Memilih Tab Ibu */}
+        {mainTab === 'ibu' && (
+          <div className="bg-white px-6 pt-2 rounded-2xl shadow-sm border border-slate-100">
+            <div className="flex border-b border-slate-200 overflow-x-auto gap-2">
+              <button
+                onClick={() => setIbuSubTab('anc')}
+                className={`pb-3 px-4 text-sm font-semibold border-b-2 transition flex items-center gap-2 whitespace-nowrap ${
+                  ibuSubTab === 'anc'
+                    ? 'border-rose-600 text-rose-600'
+                    : 'border-transparent text-slate-500 hover:text-slate-700'
+                }`}
+              >
+                <Stethoscope className="w-4 h-4" />
+                1. Pemeriksaan Kehamilan / ANC ({ancList.length})
+              </button>
+
+              <button
+                onClick={() => setIbuSubTab('nifas')}
+                className={`pb-3 px-4 text-sm font-semibold border-b-2 transition flex items-center gap-2 whitespace-nowrap ${
+                  ibuSubTab === 'nifas'
+                    ? 'border-teal-600 text-teal-600'
+                    : 'border-transparent text-slate-500 hover:text-slate-700'
+                }`}
+              >
+                <Activity className="w-4 h-4" />
+                2. Kunjungan Nifas KF1–KF4 ({nifasList.length})
+              </button>
+
+              <button
+                onClick={() => setIbuSubTab('menyusui')}
+                className={`pb-3 px-4 text-sm font-semibold border-b-2 transition flex items-center gap-2 whitespace-nowrap ${
+                  ibuSubTab === 'menyusui'
+                    ? 'border-amber-600 text-amber-600'
+                    : 'border-transparent text-slate-500 hover:text-slate-700'
+                }`}
+              >
+                <Smile className="w-4 h-4" />
+                3. Pemantauan Menyusui / ASI ({menyusuiList.length})
+              </button>
             </div>
-            <button
-              onClick={() => setSuccessMsg('')}
-              className="text-slate-400 hover:text-slate-600 text-sm font-bold"
-            >
-              ×
-            </button>
           </div>
         )}
 
-        {/* Search Card Bar */}
-        <div className="bg-white rounded-2xl border border-slate-200/80 p-4 sm:p-5 shadow-sm flex flex-col sm:flex-row items-center justify-between gap-4">
-          <div className="relative w-full sm:w-96">
-            <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
-            <input
-              type="text"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder="Cari nama balita, NIK, atau posyandu..."
-              className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 min-h-[44px] bg-slate-50/50"
-            />
-          </div>
+        {/* ======================================================== */}
+        {/* BAGIAN 1: TAB PENGUKURAN BALITA                          */}
+        {/* ======================================================== */}
+        {mainTab === 'balita' && (
+          <div className="space-y-4">
+            <div className="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 flex flex-col md:flex-row gap-3 items-center justify-between">
+              <div className="relative w-full md:w-80">
+                <Search className="w-4 h-4 absolute left-3.5 top-3.5 text-slate-400" />
+                <input
+                  type="text"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  placeholder="Cari balita, NIK, nama ibu..."
+                  className="w-full pl-10 pr-4 py-2 border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
+                />
+              </div>
 
-          <div className="text-xs text-slate-500 font-semibold self-end sm:self-center">
-            Total Riwayat Pengukuran: <span className="font-bold text-slate-900">{filteredPengukuran.length}</span> catatan
-          </div>
-        </div>
-
-        {/* Measurement History Table Card */}
-        <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
-              <thead>
-                <tr className="bg-slate-50/80 border-b border-slate-200/80 text-[11px] font-bold uppercase tracking-wider text-slate-500">
-                  <th className="p-4">Nama Balita</th>
-                  <th className="p-4">Posyandu</th>
-                  <th className="p-4">Usia Diukur</th>
-                  <th className="p-4">Hasil Pengukuran</th>
-                  <th className="p-4">Status Gizi</th>
-                  <th className="p-4">Tanggal Ukur</th>
-                  <th className="p-4 text-center">Aksi</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100 text-xs">
-                {filteredPengukuran.length === 0 ? (
-                  <tr>
-                    <td colSpan={7} className="p-12 text-center text-slate-400">
-                      <div className="flex flex-col items-center justify-center space-y-3">
-                        <Scale className="w-12 h-12 text-slate-300 stroke-1" />
-                        <p className="text-sm font-medium text-slate-500">
-                          Belum ada riwayat pengukuran yang ditemukan
-                        </p>
-                      </div>
-                    </td>
-                  </tr>
-                ) : (
-                  filteredPengukuran.map((item) => (
-                    <tr key={item.id} className="hover:bg-slate-50/60 transition-colors">
-                      <td className="p-4 font-bold text-slate-900">
-                        <div className="flex items-center space-x-2.5">
-                          <div className="w-8 h-8 rounded-lg bg-brand-100 text-brand-700 font-bold flex items-center justify-center shrink-0">
-                            {item.anak?.nama_anak?.charAt(0).toUpperCase() || 'B'}
-                          </div>
-                          <div>
-                            <div className="font-bold text-slate-900 text-sm">{item.anak?.nama_anak}</div>
-                            <div className="text-[10px] text-slate-400 font-normal">NIK: {item.anak?.nik}</div>
-                          </div>
-                        </div>
-                      </td>
-                      <td className="p-4 text-slate-600 font-medium">
-                        {item.anak?.posyandu?.nama_pos ? `Pos ${item.anak.posyandu.nama_pos}` : '-'}
-                      </td>
-                      <td className="p-4 font-semibold text-slate-700">
-                        {item.umur_bulan} Bulan
-                      </td>
-                      <td className="p-4">
-                        <div className="font-bold text-slate-800">
-                          {item.berat_kg} kg • {item.tinggi_cm} cm
-                        </div>
-                        {item.lila_cm && (
-                          <div className="text-[10px] text-slate-500">LiLA: {item.lila_cm} cm</div>
-                        )}
-                      </td>
-                      <td className="p-4 space-y-1">
-                        <span className={`inline-block px-2.5 py-0.5 rounded-full text-[10px] font-bold ${getStatusBadgeColor(item.status_bbu)}`}>
-                          BB/U: {item.status_bbu}
-                        </span>
-                        <br />
-                        <span className={`inline-block px-2.5 py-0.5 rounded-full text-[10px] font-bold ${getStatusBadgeColor(item.status_tbu)}`}>
-                          TB/U: {item.status_tbu}
-                        </span>
-                      </td>
-                      <td className="p-4 text-slate-600 font-medium">
-                        {item.tanggal_ukur}
-                      </td>
-                      <td className="p-4 text-center">
-                        <div className="flex items-center justify-center space-x-1.5">
-                          <button
-                            onClick={() => handleOpenEditModal(item)}
-                            className="p-1.5 text-brand-600 hover:bg-brand-50 rounded-lg transition-colors"
-                            title="Edit Pengukuran"
-                          >
-                            <Edit2 className="w-4 h-4" />
-                          </button>
-                          {item.anak && (
-                            <Link
-                              href={`/anak/${item.anak.id}`}
-                              className="px-2 py-1 bg-brand-50 hover:bg-brand-100 text-brand-700 font-semibold rounded-lg text-xs transition-colors"
-                            >
-                              Detail
-                            </Link>
-                          )}
-                          <button
-                            onClick={() => handleDelete(item.id, item.anak?.nama_anak || 'Balita')}
-                            className="p-1.5 text-rose-500 hover:bg-rose-50 rounded-lg transition-colors"
-                            title="Hapus"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))
+              <div className="flex items-center gap-3 w-full md:w-auto">
+                {posyandus.length > 0 && (
+                  <select
+                    value={posyanduFilter}
+                    onChange={(e) => setPosyanduFilter(e.target.value)}
+                    className="border rounded-xl px-3 py-2 text-sm bg-white"
+                  >
+                    <option value="">Semua Posyandu</option>
+                    {posyandus.map((p) => (
+                      <option key={p.id} value={p.id}>
+                        {p.nama_pos}
+                      </option>
+                    ))}
+                  </select>
                 )}
-              </tbody>
-            </table>
-          </div>
-        </div>
 
-        {/* INPUT PENGUKURAN MODAL */}
-        {showModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4 overflow-y-auto">
-            <div className="bg-white rounded-3xl max-w-xl w-full p-6 sm:p-8 space-y-6 shadow-2xl relative my-8">
-              <div className="flex items-center justify-between border-b border-slate-100 pb-4">
-                <div className="flex items-center space-x-2.5">
-                  <div className="w-9 h-9 rounded-xl bg-brand-100 text-brand-700 flex items-center justify-center">
-                    <Scale className="w-5 h-5" />
-                  </div>
+                <button
+                  onClick={openAddChildMeasure}
+                  className="bg-teal-600 hover:bg-teal-700 text-white text-sm font-semibold px-4 py-2 rounded-xl transition flex items-center gap-2 shrink-0 ml-auto"
+                >
+                  <PlusCircle className="w-4 h-4" />
+                  + Catat Pengukuran Balita
+                </button>
+              </div>
+            </div>
+
+            {/* Tabel Pengukuran Balita */}
+            <div className="bg-white rounded-3xl shadow-sm border border-slate-100 overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="w-full text-left border-collapse text-sm">
+                  <thead>
+                    <tr className="bg-slate-50 text-slate-600 font-semibold border-b border-slate-100">
+                      <th className="py-3.5 px-4">Nama Balita</th>
+                      <th className="py-3.5 px-4">Posyandu</th>
+                      <th className="py-3.5 px-4">Tgl Ukur & Usia</th>
+                      <th className="py-3.5 px-4">Hasil (BB / TB / LiLA / LK)</th>
+                      <th className="py-3.5 px-4">Status Gizi (BB/U & TB/U)</th>
+                      <th className="py-3.5 px-4" title="T: Tidak Naik | N: Naik | B: Baru ditimbang">
+                        Kenaikan BB (T/N)
+                      </th>
+                      <th className="py-3.5 px-4">Program (MBG/Vit)</th>
+                      <th className="py-3.5 px-4 text-right">Aksi</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {filteredChildMeasures.length === 0 ? (
+                      <tr>
+                        <td colSpan={8} className="py-12 text-center text-slate-400">
+                          Tidak ada catatan pengukuran balita ditemukan.
+                        </td>
+                      </tr>
+                    ) : (
+                      filteredChildMeasures.map((m) => (
+                        <tr key={m.id} className="hover:bg-slate-50/80 transition">
+                          <td className="py-3.5 px-4">
+                            <Link href={`/anak/${m.id_anak}`} className="font-semibold text-slate-800 hover:text-teal-600">
+                              {m.anak?.nama_anak}
+                            </Link>
+                            <div className="text-xs text-slate-400">
+                              Ibu: {m.anak?.nama_ibu || '-'}
+                              {m.anak?.nama_ayah ? ` • Ayah: ${m.anak.nama_ayah}` : ''}
+                            </div>
+                          </td>
+                          <td className="py-3.5 px-4 text-slate-600">{m.anak?.posyandu?.nama_pos}</td>
+                          <td className="py-3.5 px-4">
+                            <div className="font-medium text-slate-800">
+                              {new Date(m.tanggal_ukur).toLocaleDateString('id-ID')}
+                            </div>
+                            <div className="text-xs text-slate-400">{m.umur_bulan} Bulan</div>
+                          </td>
+                          <td className="py-3.5 px-4">
+                            <div className="font-semibold text-slate-800">{m.berat_kg} kg • {m.tinggi_cm} cm</div>
+                            <div className="text-xs text-slate-500">
+                              Cara: {m.cara_ukur} | LiLA: {m.lila_cm || '-'} cm | LK: {m.lingkar_kepala_cm || '-'} cm
+                            </div>
+                          </td>
+                          <td className="py-3.5 px-4">
+                            <span className={`inline-block px-2.5 py-0.5 text-xs font-semibold rounded-full ${getStatusBadgeColor(m.status_bbu)}`}>
+                              BB/U: {m.status_bbu}
+                            </span>
+                            <div className="text-[11px] text-slate-500 mt-0.5">TB/U: {m.status_tbu}</div>
+                          </td>
+                          <td className="py-3.5 px-4">
+                            {m.naik_berat_badan === 'N' ? (
+                              <span
+                                className="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-emerald-100 text-emerald-800"
+                                title="Naik (N): Berat badan naik memenuhi target kenaikan minimal (KBM)"
+                              >
+                                Naik (N)
+                              </span>
+                            ) : m.naik_berat_badan === 'T' ? (
+                              <span
+                                className="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-rose-100 text-rose-800"
+                                title="Tidak Naik (T): Berat badan tidak naik, tetap, atau turun"
+                              >
+                                Tidak Naik (T)
+                              </span>
+                            ) : m.naik_berat_badan === 'B' ? (
+                              <span
+                                className="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-blue-100 text-blue-800"
+                                title="Baru (B): Balita baru pertama kali ditimbang"
+                              >
+                                Baru (B)
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-slate-100 text-slate-600">
+                                {m.naik_berat_badan || '-'}
+                              </span>
+                            )}
+                          </td>
+                          <td className="py-3.5 px-4 text-xs space-y-0.5">
+                            {m.menerima_mbg && <div className="text-emerald-700 font-medium">✓ MBG</div>}
+                            {m.vitamin_a && <div className="text-amber-700 font-medium">✓ Vitamin A</div>}
+                            {!m.menerima_mbg && !m.vitamin_a && <div className="text-slate-400">-</div>}
+                          </td>
+                          <td className="py-3.5 px-4 text-right">
+                            <div className="flex items-center justify-end gap-1.5">
+                              <button
+                                onClick={() => openEditChildMeasure(m)}
+                                className="p-1.5 text-slate-400 hover:text-teal-600 hover:bg-teal-50 rounded-lg transition"
+                                title="Edit Pengukuran"
+                              >
+                                <Edit2 className="w-4 h-4" />
+                              </button>
+                              <button
+                                onClick={() => handleDeleteChildMeasure(m.id)}
+                                className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition"
+                                title="Hapus Pengukuran"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ======================================================== */}
+        {/* BAGIAN 2: TAB PEMERIKSAAN KESEHATAN IBU                  */}
+        {/* ======================================================== */}
+        {mainTab === 'ibu' && (
+          <div className="space-y-4">
+            {/* SUB-TAB 1: ANC */}
+            {ibuSubTab === 'anc' && (
+              <div className="space-y-4">
+                <div className="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 flex items-center justify-between">
                   <div>
-                    <h2 className="text-lg font-bold text-slate-900">
-                      {editingItem ? 'Edit Data Pengukuran Balita' : 'Input Pengukuran Balita Baru'}
-                    </h2>
-                    <p className="text-xs text-slate-500">Cari nama balita & masukkan data antropometri terbaru</p>
+                    <h2 className="text-lg font-bold text-slate-800">Catatan Pemeriksaan Kehamilan (ANC)</h2>
+                    <p className="text-slate-500 text-xs">Pemeriksaan fisik, laboratorium, DJJ, dan status gizi ibu hamil</p>
+                  </div>
+                  <button
+                    onClick={openAddAnc}
+                    className="bg-rose-600 hover:bg-rose-700 text-white text-sm font-semibold px-4 py-2 rounded-xl transition flex items-center gap-2"
+                  >
+                    <PlusCircle className="w-4 h-4" />
+                    + Catat Pemeriksaan ANC
+                  </button>
+                </div>
+
+                <div className="bg-white rounded-3xl shadow-sm border border-slate-100 overflow-hidden">
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left border-collapse text-sm">
+                      <thead>
+                        <tr className="bg-slate-50 text-slate-600 font-semibold border-b border-slate-100">
+                          <th className="py-3.5 px-4">Nama Ibu</th>
+                          <th className="py-3.5 px-4">Tgl Periksa & Usia</th>
+                          <th className="py-3.5 px-4">Tensi & BB/TB</th>
+                          <th className="py-3.5 px-4">LiLA & Status Gizi</th>
+                          <th className="py-3.5 px-4">TFU & DJJ</th>
+                          <th className="py-3.5 px-4">Laboratorium</th>
+                          <th className="py-3.5 px-4">Pemeriksa</th>
+                          <th className="py-3.5 px-4 text-right">Aksi</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100">
+                        {filteredAncList.length === 0 ? (
+                          <tr>
+                            <td colSpan={8} className="py-12 text-center text-slate-400">
+                              Belum ada catatan pemeriksaan ANC.
+                            </td>
+                          </tr>
+                        ) : (
+                          filteredAncList.map((a) => {
+                            const bumil = a.ibu_hamil || a.ibuHamil;
+                            return (
+                              <tr key={a.id} className="hover:bg-slate-50/80 transition">
+                                <td className="py-3.5 px-4">
+                                  <div className="font-semibold text-slate-800">{bumil?.nama || 'Nama Tidak Tersedia'}</div>
+                                  <div className="text-xs text-slate-500">
+                                    Suami: <span className="text-slate-700 font-medium">{bumil?.nama_suami || '-'}</span>
+                                    {bumil?.nik && ` • NIK: ${bumil.nik}`}
+                                  </div>
+                                </td>
+                                <td className="py-3.5 px-4 text-slate-600">
+                                  {new Date(a.tanggal_periksa).toLocaleDateString('id-ID')}
+                                  <div className="text-xs text-slate-500">{a.usia_kehamilan_minggu} Minggu</div>
+                                </td>
+                                <td className="py-3.5 px-4">
+                                  <div className="font-medium text-slate-800">TD: {a.tekanan_darah}</div>
+                                  <div className="text-xs text-slate-500">BB: {a.berat_kg} kg | TB: {a.tinggi_cm || '-'} cm</div>
+                                </td>
+                                <td className="py-3.5 px-4">
+                                  <span className={`px-2.5 py-0.5 text-xs font-semibold rounded-full ${getStatusBadgeColor(a.status_gizi_bumil)}`}>
+                                    {a.status_gizi_bumil} ({a.lila_cm} cm)
+                                  </span>
+                                </td>
+                                <td className="py-3.5 px-4 text-xs text-slate-700">
+                                  <div>TFU: {a.tfu_cm ? `${a.tfu_cm} cm` : '-'}</div>
+                                  <div>DJJ: {a.djj ? `${a.djj} dpm` : '-'}</div>
+                                </td>
+                                <td className="py-3.5 px-4 text-xs text-slate-600">
+                                  <div>Hb: {a.lab_hb ? `${a.lab_hb} g/dL` : '-'}</div>
+                                  <div>Protein: {a.lab_protein_urine || '-'}</div>
+                                </td>
+                                <td className="py-3.5 px-4 text-xs text-slate-500">
+                                  {a.userInput?.nama || 'Bidan'}
+                                </td>
+                                <td className="py-3.5 px-4 text-right">
+                                  <div className="flex items-center justify-end gap-1.5">
+                                    <button
+                                      onClick={() => openEditAnc(a)}
+                                      className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition"
+                                      title="Edit Pemeriksaan ANC"
+                                    >
+                                      <Edit2 className="w-4 h-4" />
+                                    </button>
+                                    <button
+                                      onClick={() => handleDeleteAnc(a.id)}
+                                      className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition"
+                                      title="Hapus Pemeriksaan ANC"
+                                    >
+                                      <Trash2 className="w-4 h-4" />
+                                    </button>
+                                  </div>
+                                </td>
+                              </tr>
+                            );
+                          })
+                        )}
+                      </tbody>
+                    </table>
                   </div>
                 </div>
+              </div>
+            )}
+
+            {/* SUB-TAB 2: NIFAS */}
+            {ibuSubTab === 'nifas' && (
+              <div className="space-y-4">
+                <div className="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 flex items-center justify-between">
+                  <div>
+                    <h2 className="text-lg font-bold text-slate-800">Catatan Kunjungan Nifas (KF1–KF4)</h2>
+                    <p className="text-slate-500 text-xs">Pencatatan tanda bahaya nifas, TTV, kontraksi, dan lokhia</p>
+                  </div>
+                  <button
+                    onClick={openAddNifas}
+                    className="bg-teal-600 hover:bg-teal-700 text-white text-sm font-semibold px-4 py-2 rounded-xl transition flex items-center gap-2"
+                  >
+                    <PlusCircle className="w-4 h-4" />
+                    + Catat Kunjungan Nifas
+                  </button>
+                </div>
+
+                <div className="bg-white rounded-3xl shadow-sm border border-slate-100 overflow-hidden">
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left border-collapse text-sm">
+                      <thead>
+                        <tr className="bg-slate-50 text-slate-600 font-semibold border-b border-slate-100">
+                          <th className="py-3.5 px-4">Nama Ibu</th>
+                          <th className="py-3.5 px-4">Tgl Melahirkan & Kunjungan</th>
+                          <th className="py-3.5 px-4">Periode KF</th>
+                          <th className="py-3.5 px-4">TTV & TD</th>
+                          <th className="py-3.5 px-4">Kondisi Payudara & Lokhia</th>
+                          <th className="py-3.5 px-4">Tanda Bahaya</th>
+                          <th className="py-3.5 px-4 text-right">Aksi</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100">
+                        {nifasList.length === 0 ? (
+                          <tr>
+                            <td colSpan={7} className="py-12 text-center text-slate-400">
+                              Belum ada catatan kunjungan nifas.
+                            </td>
+                          </tr>
+                        ) : (
+                          nifasList.map((kn) => {
+                            const bumil = kn.bumil || kn.ibu_hamil;
+                            const hasBahaya = kn.perdarahan_masif || kn.kejang || kn.syok;
+                            return (
+                              <tr key={kn.id} className="hover:bg-slate-50/80 transition">
+                                <td className="py-3.5 px-4 font-semibold text-slate-800">
+                                  {bumil?.nama}
+                                  <div className="text-xs text-slate-400">
+                                    Suami: {bumil?.nama_suami || '-'} • Pos: {bumil?.posyandu?.nama_pos || '-'}
+                                  </div>
+                                </td>
+                                <td className="py-3.5 px-4 text-slate-600">
+                                  <div>Kunjungan: {new Date(kn.tanggal_kunjungan).toLocaleDateString('id-ID')}</div>
+                                  <div className="text-xs text-slate-400">Lahir: {new Date(kn.tanggal_melahirkan).toLocaleDateString('id-ID')}</div>
+                                </td>
+                                <td className="py-3.5 px-4">
+                                  <span className="px-2.5 py-0.5 text-xs font-semibold rounded-full bg-teal-100 text-teal-800">
+                                    {kn.periode_kf}
+                                  </span>
+                                </td>
+                                <td className="py-3.5 px-4 text-slate-700">
+                                  <div className="font-medium">TD: {kn.tekanan_darah}</div>
+                                  <div className="text-xs text-slate-400">{kn.suhu_tubuh}</div>
+                                </td>
+                                <td className="py-3.5 px-4 text-xs text-slate-600">
+                                  <div>Payudara: {kn.kondisi_payudara}</div>
+                                  <div>Lokhia: {kn.warna_lokhia} | ASI: {kn.produksi_asi}</div>
+                                </td>
+                                <td className="py-3.5 px-4">
+                                  {hasBahaya ? (
+                                    <span className="inline-flex items-center gap-1 text-xs font-bold text-red-600 bg-red-50 px-2 py-0.5 rounded">
+                                      <ShieldAlert className="w-3.5 h-3.5" /> Bahaya
+                                    </span>
+                                  ) : (
+                                    <span className="text-xs text-emerald-600 font-medium">Aman</span>
+                                  )}
+                                </td>
+                                <td className="py-3.5 px-4 text-right">
+                                  <div className="flex items-center justify-end gap-1.5">
+                                    <button
+                                      onClick={() => openEditNifas(kn)}
+                                      className="p-1.5 text-slate-400 hover:text-teal-600 hover:bg-teal-50 rounded-lg transition"
+                                      title="Edit Kunjungan Nifas"
+                                    >
+                                      <Edit2 className="w-4 h-4" />
+                                    </button>
+                                    <button
+                                      onClick={() => handleDeleteNifas(kn.id)}
+                                      className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition"
+                                      title="Hapus Kunjungan Nifas"
+                                    >
+                                      <Trash2 className="w-4 h-4" />
+                                    </button>
+                                  </div>
+                                </td>
+                              </tr>
+                            );
+                          })
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* SUB-TAB 3: MENYUSUI */}
+            {ibuSubTab === 'menyusui' && (
+              <div className="space-y-4">
+                <div className="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 flex items-center justify-between">
+                  <div>
+                    <h2 className="text-lg font-bold text-slate-800">Catatan Pemantauan Menyusui (ASI)</h2>
+                    <p className="text-slate-500 text-xs">Status pemberian ASI eksklusif dan konseling laktasi</p>
+                  </div>
+                  <button
+                    onClick={openAddMenyusui}
+                    className="bg-amber-600 hover:bg-amber-700 text-white text-sm font-semibold px-4 py-2 rounded-xl transition flex items-center gap-2"
+                  >
+                    <PlusCircle className="w-4 h-4" />
+                    + Catat Pemantauan Menyusui
+                  </button>
+                </div>
+
+                <div className="bg-white rounded-3xl shadow-sm border border-slate-100 overflow-hidden">
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left border-collapse text-sm">
+                      <thead>
+                        <tr className="bg-slate-50 text-slate-600 font-semibold border-b border-slate-100">
+                          <th className="py-3.5 px-4">Nama Ibu</th>
+                          <th className="py-3.5 px-4">Tgl Pemantauan</th>
+                          <th className="py-3.5 px-4">Status & Produksi ASI</th>
+                          <th className="py-3.5 px-4">Masalah Menyusui</th>
+                          <th className="py-3.5 px-4">Konseling</th>
+                          <th className="py-3.5 px-4 text-right">Aksi</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100">
+                        {menyusuiList.length === 0 ? (
+                          <tr>
+                            <td colSpan={6} className="py-12 text-center text-slate-400">
+                              Belum ada catatan pemantauan menyusui.
+                            </td>
+                          </tr>
+                        ) : (
+                          menyusuiList.map((m) => {
+                            const bumil = m.bumil || m.ibu_hamil;
+                            return (
+                              <tr key={m.id} className="hover:bg-slate-50/80 transition">
+                                <td className="py-3.5 px-4 font-semibold text-slate-800">
+                                  {bumil?.nama}
+                                  <div className="text-xs text-slate-400">
+                                    Suami: {bumil?.nama_suami || '-'} • Pos: {bumil?.posyandu?.nama_pos || '-'}
+                                  </div>
+                                </td>
+                                <td className="py-3.5 px-4 text-slate-600">
+                                  {new Date(m.tanggal_pemantauan).toLocaleDateString('id-ID')}
+                                </td>
+                                <td className="py-3.5 px-4">
+                                  <span className={`px-2.5 py-0.5 text-xs font-semibold rounded-full ${
+                                    m.asi_eksklusif ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'
+                                  }`}>
+                                    {m.asi_eksklusif ? 'ASI Eksklusif' : 'Non-Eksklusif'}
+                                  </span>
+                                  <div className="text-xs text-slate-400 mt-0.5">Produksi: {m.produksi_asi}</div>
+                                </td>
+                                <td className="py-3.5 px-4 text-slate-600 text-xs">
+                                  {m.masalah_menyusui || 'Tidak ada'}
+                                </td>
+                                <td className="py-3.5 px-4 text-xs font-medium">
+                                  {m.konseling_asi ? (
+                                    <span className="text-emerald-600">✓ Diberikan Edukasi</span>
+                                  ) : (
+                                    <span className="text-slate-400">-</span>
+                                  )}
+                                </td>
+                                <td className="py-3.5 px-4 text-right">
+                                  <div className="flex items-center justify-end gap-1.5">
+                                    <button
+                                      onClick={() => openEditMenyusui(m)}
+                                      className="p-1.5 text-slate-400 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition"
+                                      title="Edit Pemantauan Menyusui"
+                                    >
+                                      <Edit2 className="w-4 h-4" />
+                                    </button>
+                                    <button
+                                      onClick={() => handleDeleteMenyusui(m.id)}
+                                      className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition"
+                                      title="Hapus Pemantauan Menyusui"
+                                    >
+                                      <Trash2 className="w-4 h-4" />
+                                    </button>
+                                  </div>
+                                </td>
+                              </tr>
+                            );
+                          })
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ======================================================== */}
+        {/* MODAL 1: FORM PENGUKURAN BALITA LENGKAP                 */}
+        {/* ======================================================== */}
+        {showChildMeasureModal && (
+          <div className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4">
+            <div className="bg-white rounded-3xl max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-2xl border border-slate-100 p-6 space-y-6">
+              <div className="flex items-center justify-between border-b pb-4">
+                <div>
+                  <h3 className="text-xl font-bold text-slate-800">
+                    {editingChildMeasureId ? 'Edit Catatan Pengukuran Balita' : 'Catat Pengukuran Balita'}
+                  </h3>
+                  <p className="text-xs text-slate-400 mt-0.5">Sesuai instrumen antropometri lengkap Kemenkes</p>
+                </div>
                 <button
-                  onClick={() => setShowModal(false)}
-                  className="text-slate-400 hover:text-slate-600 p-1 rounded-lg hover:bg-slate-100 transition-colors"
+                  onClick={() => setShowChildMeasureModal(false)}
+                  className="p-1.5 text-slate-400 hover:text-slate-600 rounded-lg"
                 >
                   <X className="w-5 h-5" />
                 </button>
               </div>
 
-              {error && (
-                <div className="p-3.5 bg-rose-50 border border-rose-200 text-rose-700 rounded-2xl text-xs flex items-center space-x-2">
+              {childMeasureError && (
+                <div className="p-3 bg-red-50 border border-red-200 text-red-700 text-sm rounded-xl flex items-center gap-2">
                   <AlertCircle className="w-4 h-4 shrink-0" />
-                  <span>{error}</span>
+                  {childMeasureError}
                 </div>
               )}
 
-              <form onSubmit={handleSubmit} className="space-y-4">
-                {/* STEP 1: AUTOCOMPLETE CHILD SEARCH (INITIAL MATCHING) */}
-                <div className="space-y-1.5">
-                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-700">
-                    1. Cari & Pilih Nama Balita *
-                  </label>
+              <form onSubmit={handleChildMeasureSubmit} className="space-y-4 text-sm">
+                {/* Searchable Balita Picker */}
+                <SearchableSelect
+                  label="Pilih Balita Sasaran"
+                  placeholder="Ketik nama balita, NIK, atau nama ibu..."
+                  value={childMeasureForm.id_anak}
+                  onChange={(val) => setChildMeasureForm({ ...childMeasureForm, id_anak: val })}
+                  options={childOptions}
+                  required
+                />
 
-                  <div className="relative">
-                    <div className="relative">
-                      <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
-                      <input
-                        type="text"
-                        value={childSearchQuery}
-                        onFocus={() => setIsDropdownOpen(true)}
-                        onChange={(e) => {
-                          setChildSearchQuery(e.target.value);
-                          setIsDropdownOpen(true);
-                          if (selectedChild && e.target.value !== selectedChild.nama_anak) {
-                            setSelectedChild(null);
-                          }
-                        }}
-                        placeholder="Ketik inisial/huruf pertama (Contoh: 'N' untuk Nisa)..."
-                        className="w-full pl-10 pr-10 py-3 rounded-2xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 bg-slate-50/50 min-h-[46px]"
-                      />
-                      {childSearchQuery && (
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setChildSearchQuery('');
-                            setSelectedChild(null);
-                            setIsDropdownOpen(true);
-                          }}
-                          className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 text-sm font-bold"
-                        >
-                          ×
-                        </button>
-                      )}
-                    </div>
-
-                    {/* Autocomplete Dropdown */}
-                    {isDropdownOpen && (
-                      <div className="absolute left-0 right-0 top-full mt-2 bg-white rounded-2xl border border-slate-200 shadow-2xl z-30 max-h-56 overflow-y-auto divide-y divide-slate-100">
-                        {filteredChildrenForInput.length === 0 ? (
-                          <div className="p-4 text-center text-xs text-slate-500">
-                            Tidak ada balita yang cocok dengan "{childSearchQuery}"
-                          </div>
-                        ) : (
-                          filteredChildrenForInput.map((child) => (
-                            <button
-                              key={child.id}
-                              type="button"
-                              onClick={() => handleSelectChild(child)}
-                              className="w-full text-left p-3 hover:bg-brand-50/60 transition-colors flex items-center justify-between gap-3 text-xs"
-                            >
-                              <div className="flex items-center space-x-3">
-                                <div className="w-8 h-8 rounded-xl bg-brand-100 text-brand-700 font-bold flex items-center justify-center text-xs shrink-0">
-                                  {child.nama_anak.charAt(0).toUpperCase()}
-                                </div>
-                                <div>
-                                  <div className="font-bold text-slate-900 text-xs sm:text-sm">{child.nama_anak}</div>
-                                  <div className="text-[10px] text-slate-500 flex items-center gap-1.5 mt-0.5">
-                                    <span>NIK: {child.nik}</span>
-                                    <span>•</span>
-                                    <span>{child.jenis_kelamin === 'L' ? 'Laki-laki' : 'Perempuan'}</span>
-                                    <span>•</span>
-                                    <span>Ibu: {child.nama_ibu}</span>
-                                  </div>
-                                </div>
-                              </div>
-                              <span className="text-[11px] font-semibold text-brand-600 shrink-0">Pilih</span>
-                            </button>
-                          ))
-                        )}
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                {/* Selected Child Info Badge */}
-                {selectedChild && (
-                  <div className="p-3 bg-brand-50 border border-brand-200/80 rounded-2xl flex items-center justify-between gap-3 text-xs">
-                    <div className="flex items-center space-x-2.5">
-                      <div className="w-8 h-8 rounded-xl bg-brand-600 text-white font-bold flex items-center justify-center shrink-0">
-                        {selectedChild.nama_anak.charAt(0).toUpperCase()}
-                      </div>
-                      <div>
-                        <div className="font-semibold text-slate-900">{selectedChild.nama_anak}</div>
-                        <div className="text-[11px] text-slate-600">
-                          {selectedChild.jenis_kelamin === 'L' ? 'Laki-laki' : 'Perempuan'} • Usia: <strong>{ageMonths} Bulan</strong>
-                        </div>
-                      </div>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => handleOpenModalWithChild()}
-                      className="text-[11px] font-semibold text-brand-700 hover:underline"
-                    >
-                      Ganti
-                    </button>
-                  </div>
-                )}
-
-                {/* STEP 2: MEASUREMENT INPUT FORM */}
-                <div className="space-y-3 pt-2">
-                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-700">
-                    2. Data Pengukuran Antropometri
-                  </label>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <div>
-                      <label className="block text-xs font-semibold text-slate-700 mb-1">Tanggal Penimbangan *</label>
-                      <input
-                        type="date"
-                        required
-                        value={tanggalUkur}
-                        onChange={(e) => setTanggalUkur(e.target.value)}
-                        className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-brand-500 focus:outline-none bg-white min-h-[42px]"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-xs font-semibold text-slate-700 mb-1">Cara Pengukuran *</label>
-                      <select
-                        value={caraUkur}
-                        onChange={(e) => setCaraUkur(e.target.value as any)}
-                        className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-brand-500 focus:outline-none bg-white min-h-[42px]"
-                      >
-                        <option value="telentang">Telentang / Baring (&lt; 24 bln)</option>
-                        <option value="berdiri">Berdiri (&ge; 24 bln)</option>
-                      </select>
-                    </div>
-
-                    <div>
-                      <label className="block text-xs font-semibold text-slate-700 mb-1">Berat Badan (Kg) *</label>
-                      <input
-                        type="number"
-                        step="0.01"
-                        required
-                        value={beratKg}
-                        onChange={(e) => setBeratKg(e.target.value)}
-                        placeholder="Contoh: 9.8"
-                        className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-brand-500 focus:outline-none bg-white min-h-[42px]"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-xs font-semibold text-slate-700 mb-1">Tinggi / Panjang Badan (Cm) *</label>
-                      <input
-                        type="number"
-                        step="0.1"
-                        required
-                        value={tinggiCm}
-                        onChange={(e) => setTinggiCm(e.target.value)}
-                        placeholder="Contoh: 77.0"
-                        className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-brand-500 focus:outline-none bg-white min-h-[42px]"
-                      />
-                    </div>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div>
+                    <label className="block text-slate-700 font-medium mb-1">Tanggal Pengukuran *</label>
+                    <input
+                      type="date"
+                      required
+                      value={childMeasureForm.tanggal_ukur}
+                      onChange={(e) => setChildMeasureForm({ ...childMeasureForm, tanggal_ukur: e.target.value })}
+                      className="w-full px-3 py-2 border rounded-xl"
+                    />
                   </div>
 
                   <div>
-                    <label className="block text-xs font-semibold text-slate-700 mb-1">LiLA (Cm - Opsional)</label>
+                    <label className="block text-slate-700 font-medium mb-1">Berat Badan (kg) *</label>
+                    <input
+                      type="number"
+                      step="0.01"
+                      required
+                      value={childMeasureForm.berat_kg}
+                      onChange={(e) => setChildMeasureForm({ ...childMeasureForm, berat_kg: e.target.value })}
+                      className="w-full px-3 py-2 border rounded-xl"
+                      placeholder="Contoh: 10.25"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-slate-700 font-medium mb-1">Panjang / Tinggi (cm) *</label>
                     <input
                       type="number"
                       step="0.1"
-                      value={lilaCm}
-                      onChange={(e) => setLilaCm(e.target.value)}
-                      placeholder="Contoh: 14.5"
-                      className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-brand-500 focus:outline-none bg-white min-h-[42px]"
+                      required
+                      value={childMeasureForm.tinggi_cm}
+                      onChange={(e) => setChildMeasureForm({ ...childMeasureForm, tinggi_cm: e.target.value })}
+                      className="w-full px-3 py-2 border rounded-xl"
+                      placeholder="Contoh: 82.5"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-slate-700 font-medium mb-1">Cara Ukur Tinggi *</label>
+                    <select
+                      value={childMeasureForm.cara_ukur}
+                      onChange={(e) => setChildMeasureForm({ ...childMeasureForm, cara_ukur: e.target.value })}
+                      className="w-full px-3 py-2 border rounded-xl"
+                    >
+                      <option value="telentang">Telentang (&lt; 2 tahun)</option>
+                      <option value="berdiri">Berdiri (&ge; 2 tahun)</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-slate-700 font-medium mb-1">LiLA (cm)</label>
+                    <input
+                      type="number"
+                      step="0.1"
+                      value={childMeasureForm.lila_cm}
+                      onChange={(e) => setChildMeasureForm({ ...childMeasureForm, lila_cm: e.target.value })}
+                      className="w-full px-3 py-2 border rounded-xl"
+                      placeholder="14.5"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-slate-700 font-medium mb-1">Lingkar Kepala (cm)</label>
+                    <input
+                      type="number"
+                      step="0.1"
+                      value={childMeasureForm.lingkar_kepala_cm}
+                      onChange={(e) => setChildMeasureForm({ ...childMeasureForm, lingkar_kepala_cm: e.target.value })}
+                      className="w-full px-3 py-2 border rounded-xl"
+                      placeholder="46.5"
                     />
                   </div>
                 </div>
 
-                {/* Live nutrition status preview */}
-                {liveStatus && (
-                  <div className="p-3.5 bg-brand-50/80 border border-brand-200 rounded-2xl space-y-1.5">
-                    <div className="flex items-center space-x-2 text-[11px] font-bold text-brand-800 uppercase tracking-wider">
-                      <Activity className="w-3.5 h-3.5 text-brand-600" />
-                      <span>Kalkulasi Status Gizi Otomatis</span>
-                    </div>
+                {/* Status Kenaikan Berat Badan (T/N) Field with clear explanation */}
+                <div>
+                  <label className="block text-slate-700 font-medium mb-1">
+                    Status Kenaikan Berat Badan (T/N)
+                  </label>
+                  <select
+                    value={childMeasureForm.naik_berat_badan}
+                    onChange={(e) => setChildMeasureForm({ ...childMeasureForm, naik_berat_badan: e.target.value })}
+                    className="w-full px-3 py-2 border rounded-xl text-sm bg-white"
+                  >
+                    <option value="">Otomatis (Sistem menghitung dari riwayat penimbangan bulan lalu)</option>
+                    <option value="N">N - Naik (Berat badan naik sesuai target KBM / Kenaikan Minimal)</option>
+                    <option value="T">T - Tidak Naik (Berat badan tetap, turun, atau kenaikan di bawah KBM)</option>
+                    <option value="B">B - Baru (Balita baru pertama kali ditimbang di Posyandu)</option>
+                  </select>
+                  <p className="text-[11px] text-slate-400 mt-1">
+                    Catatan: Jika dikosongkan, sistem SIGIZI otomatis membandingkan dengan penimbangan bulan sebelumnya.
+                  </p>
+                </div>
 
-                    <div className="grid grid-cols-2 gap-2 text-xs">
-                      <div className="bg-white p-2 rounded-xl border border-brand-100">
-                        <span className="text-[10px] text-slate-400 block">Status BB/U</span>
-                        <span className="font-semibold text-slate-900">{liveStatus.status_bbu}</span>
-                      </div>
-                      <div className="bg-white p-2 rounded-xl border border-brand-100">
-                        <span className="text-[10px] text-slate-400 block">Status TB/U</span>
-                        <span className="font-semibold text-brand-700">{liveStatus.status_tbu}</span>
-                      </div>
-                    </div>
-                  </div>
-                )}
+                {/* Program & Indikator Tambahan */}
+                <div className="bg-slate-50 p-3.5 rounded-xl border border-slate-200 grid grid-cols-2 md:grid-cols-4 gap-3 text-xs">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={childMeasureForm.pitting_edema_bilateral}
+                      onChange={(e) => setChildMeasureForm({ ...childMeasureForm, pitting_edema_bilateral: e.target.checked })}
+                      className="rounded"
+                    />
+                    Pitting Edema Bilateral
+                  </label>
 
-                <div className="pt-3 border-t border-slate-100 flex items-center justify-end space-x-3">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={childMeasureForm.kelas_balita}
+                      onChange={(e) => setChildMeasureForm({ ...childMeasureForm, kelas_balita: e.target.checked })}
+                      className="rounded"
+                    />
+                    Ikut Kelas Balita
+                  </label>
+
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={childMeasureForm.menerima_mbg}
+                      onChange={(e) => setChildMeasureForm({ ...childMeasureForm, menerima_mbg: e.target.checked })}
+                      className="rounded"
+                    />
+                    Menerima MBG
+                  </label>
+
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={childMeasureForm.vitamin_a}
+                      onChange={(e) => setChildMeasureForm({ ...childMeasureForm, vitamin_a: e.target.checked })}
+                      className="rounded"
+                    />
+                    Diberikan Vitamin A
+                  </label>
+                </div>
+
+                <div className="flex justify-end gap-3 pt-3 border-t">
                   <button
                     type="button"
-                    onClick={() => setShowModal(false)}
-                    className="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold rounded-xl min-h-[42px]"
+                    onClick={() => setShowChildMeasureModal(false)}
+                    className="px-4 py-2 border rounded-xl text-slate-600 hover:bg-slate-50"
                   >
                     Batal
                   </button>
                   <button
                     type="submit"
-                    disabled={submitting || !selectedChild}
-                    className="px-5 py-2.5 bg-brand-600 hover:bg-brand-700 text-white text-xs font-semibold rounded-xl min-h-[42px] shadow-md shadow-brand-600/20 disabled:opacity-50"
+                    disabled={childMeasureSubmitting}
+                    className="px-5 py-2 bg-teal-600 text-white rounded-xl font-medium hover:bg-teal-700 disabled:opacity-50"
                   >
-                    {submitting ? 'Menyimpan...' : 'Simpan Pengukuran'}
+                    {childMeasureSubmitting
+                      ? 'Menyimpan...'
+                      : editingChildMeasureId
+                      ? 'Perbarui Pengukuran'
+                      : 'Simpan Pengukuran Balita'}
                   </button>
                 </div>
               </form>
@@ -672,63 +1445,536 @@ export default function Index({ childrenList = [], pengukuranList = [], masterOp
           </div>
         )}
 
-        {/* Modal Quick Add Standar Parameter Pengukuran Baru */}
-        {showMasterModal && (
-          <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
-            <div className="bg-white rounded-2xl shadow-xl border border-slate-200 max-w-md w-full p-6 space-y-4 animate-in fade-in zoom-in-95">
-              <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-                <h3 className="font-bold text-slate-900 text-base">Tambah Parameter / Standar Pengukuran Baru</h3>
-                <button
-                  type="button"
-                  onClick={() => setShowMasterModal(false)}
-                  className="p-1 text-slate-400 hover:text-slate-600 rounded-lg"
-                >
+        {/* ======================================================== */}
+        {/* MODAL 2: FORM ANC IBU HAMIL LENGKAP                      */}
+        {/* ======================================================== */}
+        {showAncModal && (
+          <div className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4">
+            <div className="bg-white rounded-3xl max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-2xl border border-slate-100 p-6 space-y-6">
+              <div className="flex items-center justify-between border-b pb-4">
+                <div>
+                  <h3 className="text-xl font-bold text-slate-800">
+                    {editingAncId ? 'Edit Pemeriksaan ANC Ibu Hamil' : 'Catat Pemeriksaan ANC Ibu Hamil'}
+                  </h3>
+                  <p className="text-xs text-slate-400 mt-0.5">Sesuai instrumen ANC terpadu Kemenkes</p>
+                </div>
+                <button onClick={() => setShowAncModal(false)} className="p-1.5 text-slate-400 hover:text-slate-600 rounded-lg">
                   <X className="w-5 h-5" />
                 </button>
               </div>
 
-              <form onSubmit={handleCreateNewMaster} className="space-y-4">
+              {ancError && (
+                <div className="p-3 bg-red-50 border border-red-200 text-red-700 text-sm rounded-xl flex items-center gap-2">
+                  <AlertCircle className="w-4 h-4 shrink-0" />
+                  {ancError}
+                </div>
+              )}
+
+              <form onSubmit={handleAncSubmit} className="space-y-4 text-sm">
+                {/* Searchable Bumil Picker */}
+                <SearchableSelect
+                  label="Pilih Ibu Hamil Sasaran"
+                  placeholder="Ketik nama ibu hamil, NIK, atau nama suami..."
+                  value={ancForm.id_bumil}
+                  onChange={(val) => setAncForm({ ...ancForm, id_bumil: val })}
+                  options={bumilOptions}
+                  required
+                />
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div>
+                    <label className="block text-slate-700 font-medium mb-1">Tgl Periksa *</label>
+                    <input
+                      type="date"
+                      required
+                      value={ancForm.tanggal_periksa}
+                      onChange={(e) => setAncForm({ ...ancForm, tanggal_periksa: e.target.value })}
+                      className="w-full px-3 py-2 border rounded-xl"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-slate-700 font-medium mb-1">Usia Kehamilan (Minggu) *</label>
+                    <input
+                      type="number"
+                      required
+                      min="1"
+                      value={ancForm.usia_kehamilan_minggu}
+                      onChange={(e) => setAncForm({ ...ancForm, usia_kehamilan_minggu: e.target.value })}
+                      className="w-full px-3 py-2 border rounded-xl"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-slate-700 font-medium mb-1">Tekanan Darah *</label>
+                    <input
+                      type="text"
+                      required
+                      value={ancForm.tekanan_darah}
+                      onChange={(e) => setAncForm({ ...ancForm, tekanan_darah: e.target.value })}
+                      className="w-full px-3 py-2 border rounded-xl"
+                      placeholder="120/80"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-slate-700 font-medium mb-1">Berat Badan (kg) *</label>
+                    <input
+                      type="number"
+                      step="0.1"
+                      required
+                      value={ancForm.berat_kg}
+                      onChange={(e) => setAncForm({ ...ancForm, berat_kg: e.target.value })}
+                      className="w-full px-3 py-2 border rounded-xl"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-slate-700 font-medium mb-1">Tinggi Badan (cm)</label>
+                    <input
+                      type="number"
+                      step="0.1"
+                      value={ancForm.tinggi_cm}
+                      onChange={(e) => setAncForm({ ...ancForm, tinggi_cm: e.target.value })}
+                      className="w-full px-3 py-2 border rounded-xl"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-slate-700 font-medium mb-1">LiLA (cm) *</label>
+                    <input
+                      type="number"
+                      step="0.1"
+                      required
+                      value={ancForm.lila_cm}
+                      onChange={(e) => setAncForm({ ...ancForm, lila_cm: e.target.value })}
+                      className="w-full px-3 py-2 border rounded-xl"
+                      placeholder="24.5"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-slate-700 font-medium mb-1">TFU (cm)</label>
+                    <input
+                      type="number"
+                      step="0.1"
+                      value={ancForm.tfu_cm}
+                      onChange={(e) => setAncForm({ ...ancForm, tfu_cm: e.target.value })}
+                      className="w-full px-3 py-2 border rounded-xl"
+                      placeholder="20"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-slate-700 font-medium mb-1">DJJ (dpm)</label>
+                    <input
+                      type="number"
+                      value={ancForm.djj}
+                      onChange={(e) => setAncForm({ ...ancForm, djj: e.target.value })}
+                      className="w-full px-3 py-2 border rounded-xl"
+                      placeholder="140"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-slate-700 font-medium mb-1">Kadar Hb (g/dL)</label>
+                    <input
+                      type="number"
+                      step="0.1"
+                      value={ancForm.lab_hb}
+                      onChange={(e) => setAncForm({ ...ancForm, lab_hb: e.target.value })}
+                      className="w-full px-3 py-2 border rounded-xl"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-slate-700 font-medium mb-1">Protein Urine</label>
+                    <select
+                      value={ancForm.lab_protein_urine}
+                      onChange={(e) => setAncForm({ ...ancForm, lab_protein_urine: e.target.value })}
+                      className="w-full px-3 py-2 border rounded-xl"
+                    >
+                      <option value="Negatif (-)">Negatif (-)</option>
+                      <option value="Positif 1 (+1)">Positif 1 (+1)</option>
+                      <option value="Positif 2 (+2)">Positif 2 (+2)</option>
+                      <option value="Positif 3 (+3)">Positif 3 (+3)</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-slate-700 font-medium mb-1">Presentasi Janin</label>
+                    <select
+                      value={ancForm.presentasi_janin}
+                      onChange={(e) => setAncForm({ ...ancForm, presentasi_janin: e.target.value })}
+                      className="w-full px-3 py-2 border rounded-xl"
+                    >
+                      <option value="Kepala">Kepala</option>
+                      <option value="Sungsang">Sungsang</option>
+                      <option value="Lintang">Lintang</option>
+                      <option value="Belum Teraba">Belum Teraba</option>
+                    </select>
+                  </div>
+                </div>
+
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">
-                    Nama Parameter / Standar Baru <span className="text-rose-500">*</span>
-                  </label>
+                  <label className="block text-slate-700 font-medium mb-1">Keluhan / Catatan Medis</label>
                   <input
                     type="text"
-                    placeholder="Contoh: Lingkar Kepala (LK), Pemeriksaan Hb Balita, IMT Balita"
-                    value={newMasterName}
-                    onChange={(e) => setNewMasterName(e.target.value)}
-                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium focus:ring-2 focus:ring-brand-500 outline-none"
-                    required
+                    value={ancForm.keluhan}
+                    onChange={(e) => setAncForm({ ...ancForm, keluhan: e.target.value })}
+                    className="w-full px-3 py-2 border rounded-xl"
+                    placeholder="Mual di pagi hari, pusing, dll"
                   />
                 </div>
 
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">
-                    Keterangan / Satuan (Opsional)
+                <div className="flex items-center gap-6 pt-2">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={ancForm.usg}
+                      onChange={(e) => setAncForm({ ...ancForm, usg: e.target.checked })}
+                      className="rounded"
+                    />
+                    Pemeriksaan USG
                   </label>
-                  <textarea
-                    rows={3}
-                    placeholder="Contoh: Satuan cm, batas normal Lingkar Kepala bayi sesuai grafik WHO 2026"
-                    value={newMasterKet}
-                    onChange={(e) => setNewMasterKet(e.target.value)}
-                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium focus:ring-2 focus:ring-brand-500 outline-none resize-none"
-                  />
+
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={ancForm.menerima_mbg}
+                      onChange={(e) => setAncForm({ ...ancForm, menerima_mbg: e.target.checked })}
+                      className="rounded"
+                    />
+                    Menerima MBG
+                  </label>
+
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={ancForm.konseling}
+                      onChange={(e) => setAncForm({ ...ancForm, konseling: e.target.checked })}
+                      className="rounded"
+                    />
+                    Konseling Gizi/KIA
+                  </label>
                 </div>
 
-                <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
+                <div className="flex justify-end gap-3 pt-3 border-t">
                   <button
                     type="button"
-                    onClick={() => setShowMasterModal(false)}
-                    className="px-4 py-2 border border-slate-200 text-slate-600 rounded-xl font-semibold text-xs hover:bg-slate-50 transition-all min-h-[38px]"
+                    onClick={() => setShowAncModal(false)}
+                    className="px-4 py-2 border rounded-xl text-slate-600 hover:bg-slate-50"
                   >
                     Batal
                   </button>
                   <button
                     type="submit"
-                    disabled={submittingMaster}
-                    className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold text-xs shadow-md shadow-emerald-600/20 transition-all min-h-[38px] disabled:opacity-50"
+                    disabled={ancSubmitting}
+                    className="px-5 py-2 bg-rose-600 text-white rounded-xl font-medium hover:bg-rose-700 disabled:opacity-50"
                   >
-                    {submittingMaster ? 'Menyimpan...' : 'Tambah Standar Parameter'}
+                    {ancSubmitting ? 'Menyimpan...' : editingAncId ? 'Perbarui ANC' : 'Simpan Pemeriksaan ANC'}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+
+        {/* ======================================================== */}
+        {/* MODAL 3: FORM KUNJUNGAN NIFAS LENGKAP                    */}
+        {/* ======================================================== */}
+        {showNifasModal && (
+          <div className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4">
+            <div className="bg-white rounded-3xl max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-2xl border border-slate-100 p-6 space-y-6">
+              <div className="flex items-center justify-between border-b pb-4">
+                <div>
+                  <h3 className="text-xl font-bold text-slate-800">
+                    {editingNifasId ? 'Edit Kunjungan Nifas (KF)' : 'Catat Kunjungan Nifas (KF1–KF4)'}
+                  </h3>
+                  <p className="text-xs text-slate-400 mt-0.5">Sesuai instrumen pelayanan masa nifas Kemenkes</p>
+                </div>
+                <button onClick={() => setShowNifasModal(false)} className="p-1.5 text-slate-400 hover:text-slate-600 rounded-lg">
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              {nifasError && (
+                <div className="p-3 bg-red-50 border border-red-200 text-red-700 text-sm rounded-xl flex items-center gap-2">
+                  <AlertCircle className="w-4 h-4 shrink-0" />
+                  {nifasError}
+                </div>
+              )}
+
+              <form onSubmit={handleNifasSubmit} className="space-y-4 text-sm">
+                {/* Searchable Bumil Picker */}
+                <SearchableSelect
+                  label="Pilih Ibu Sasaran Nifas"
+                  placeholder="Ketik nama ibu nifas, NIK, atau nama suami..."
+                  value={nifasForm.id_bumil}
+                  onChange={(val) => setNifasForm({ ...nifasForm, id_bumil: val })}
+                  options={bumilOptions}
+                  required
+                />
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-slate-700 font-medium mb-1">Tanggal Melahirkan *</label>
+                    <input
+                      type="date"
+                      required
+                      value={nifasForm.tanggal_melahirkan}
+                      onChange={(e) => setNifasForm({ ...nifasForm, tanggal_melahirkan: e.target.value })}
+                      className="w-full px-3 py-2 border rounded-xl"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-slate-700 font-medium mb-1">Tanggal Kunjungan Nifas *</label>
+                    <input
+                      type="date"
+                      required
+                      value={nifasForm.tanggal_kunjungan}
+                      onChange={(e) => setNifasForm({ ...nifasForm, tanggal_kunjungan: e.target.value })}
+                      className="w-full px-3 py-2 border rounded-xl"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-slate-700 font-medium mb-1">Tekanan Darah *</label>
+                    <input
+                      type="text"
+                      required
+                      value={nifasForm.tekanan_darah}
+                      onChange={(e) => setNifasForm({ ...nifasForm, tekanan_darah: e.target.value })}
+                      className="w-full px-3 py-2 border rounded-xl"
+                      placeholder="120/80"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-slate-700 font-medium mb-1">Suhu Tubuh</label>
+                    <input
+                      type="text"
+                      value={nifasForm.suhu_tubuh}
+                      onChange={(e) => setNifasForm({ ...nifasForm, suhu_tubuh: e.target.value })}
+                      className="w-full px-3 py-2 border rounded-xl"
+                      placeholder="36.5 C"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div>
+                    <label className="block text-slate-700 font-medium mb-1">Kondisi Payudara</label>
+                    <select
+                      value={nifasForm.kondisi_payudara}
+                      onChange={(e) => setNifasForm({ ...nifasForm, kondisi_payudara: e.target.value })}
+                      className="w-full px-3 py-2 border rounded-xl"
+                    >
+                      <option value="Normal">Normal</option>
+                      <option value="Bengkak">Bengkak</option>
+                      <option value="Puting Lecet">Puting Lecet</option>
+                      <option value="Mastitis">Mastitis</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-slate-700 font-medium mb-1">Kontraksi Uterus</label>
+                    <select
+                      value={nifasForm.kontraksi_uterus}
+                      onChange={(e) => setNifasForm({ ...nifasForm, kontraksi_uterus: e.target.value })}
+                      className="w-full px-3 py-2 border rounded-xl"
+                    >
+                      <option value="Baik">Baik (Keras)</option>
+                      <option value="Lembek">Lembek</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-slate-700 font-medium mb-1">Warna Lokhia</label>
+                    <select
+                      value={nifasForm.warna_lokhia}
+                      onChange={(e) => setNifasForm({ ...nifasForm, warna_lokhia: e.target.value })}
+                      className="w-full px-3 py-2 border rounded-xl"
+                    >
+                      <option value="Merah">Merah (Rubra)</option>
+                      <option value="Kecokelatan">Kecokelatan (Sanguinolenta)</option>
+                      <option value="Kuning">Kuning (Serosa)</option>
+                      <option value="Putih">Putih (Alba)</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div className="bg-red-50/50 p-4 rounded-xl border border-red-200">
+                  <div className="text-xs font-bold text-red-800 mb-2 flex items-center gap-1.5">
+                    <ShieldAlert className="w-4 h-4 text-red-600" />
+                    Skrining Tanda Bahaya Nifas
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
+                    <label className="flex items-center gap-2 cursor-pointer text-slate-700">
+                      <input
+                        type="checkbox"
+                        checked={nifasForm.perdarahan_masif}
+                        onChange={(e) => setNifasForm({ ...nifasForm, perdarahan_masif: e.target.checked })}
+                        className="rounded text-red-600"
+                      />
+                      Perdarahan Masif
+                    </label>
+
+                    <label className="flex items-center gap-2 cursor-pointer text-slate-700">
+                      <input
+                        type="checkbox"
+                        checked={nifasForm.kejang}
+                        onChange={(e) => setNifasForm({ ...nifasForm, kejang: e.target.checked })}
+                        className="rounded text-red-600"
+                      />
+                      Kejang
+                    </label>
+
+                    <label className="flex items-center gap-2 cursor-pointer text-slate-700">
+                      <input
+                        type="checkbox"
+                        checked={nifasForm.syok}
+                        onChange={(e) => setNifasForm({ ...nifasForm, syok: e.target.checked })}
+                        className="rounded text-red-600"
+                      />
+                      Tanda Syok / Pingsan
+                    </label>
+                  </div>
+                </div>
+
+                <div className="flex justify-end gap-3 pt-3 border-t">
+                  <button
+                    type="button"
+                    onClick={() => setShowNifasModal(false)}
+                    className="px-4 py-2 border rounded-xl text-slate-600 hover:bg-slate-50"
+                  >
+                    Batal
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={nifasSubmitting}
+                    className="px-5 py-2 bg-teal-600 text-white rounded-xl font-medium hover:bg-teal-700 disabled:opacity-50"
+                  >
+                    {nifasSubmitting ? 'Menyimpan...' : editingNifasId ? 'Perbarui Kunjungan' : 'Simpan Kunjungan Nifas'}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+
+        {/* ======================================================== */}
+        {/* MODAL 4: FORM PEMANTAUAN MENYUSUI LENGKAP                */}
+        {/* ======================================================== */}
+        {showMenyusuiModal && (
+          <div className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4">
+            <div className="bg-white rounded-3xl max-w-xl w-full max-h-[90vh] overflow-y-auto shadow-2xl border border-slate-100 p-6 space-y-6">
+              <div className="flex items-center justify-between border-b pb-4">
+                <div>
+                  <h3 className="text-xl font-bold text-slate-800">
+                    {editingMenyusuiId ? 'Edit Pemantauan Menyusui' : 'Catat Pemantauan Menyusui (ASI)'}
+                  </h3>
+                  <p className="text-xs text-slate-400 mt-0.5">Pemantauan produksi ASI dan keluhan laktasi</p>
+                </div>
+                <button onClick={() => setShowMenyusuiModal(false)} className="p-1.5 text-slate-400 hover:text-slate-600 rounded-lg">
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              {menyusuiError && (
+                <div className="p-3 bg-red-50 border border-red-200 text-red-700 text-sm rounded-xl flex items-center gap-2">
+                  <AlertCircle className="w-4 h-4 shrink-0" />
+                  {menyusuiError}
+                </div>
+              )}
+
+              <form onSubmit={handleMenyusuiSubmit} className="space-y-4 text-sm">
+                {/* Searchable Bumil Picker */}
+                <SearchableSelect
+                  label="Pilih Ibu Sasaran Menyusui"
+                  placeholder="Ketik nama ibu menyusui, NIK, atau nama suami..."
+                  value={menyusuiForm.id_bumil}
+                  onChange={(val) => setMenyusuiForm({ ...menyusuiForm, id_bumil: val })}
+                  options={bumilOptions}
+                  required
+                />
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-slate-700 font-medium mb-1">Tanggal Pemantauan *</label>
+                    <input
+                      type="date"
+                      required
+                      value={menyusuiForm.tanggal_pemantauan}
+                      onChange={(e) => setMenyusuiForm({ ...menyusuiForm, tanggal_pemantauan: e.target.value })}
+                      className="w-full px-3 py-2 border rounded-xl"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-slate-700 font-medium mb-1">Produksi ASI</label>
+                    <select
+                      value={menyusuiForm.produksi_asi}
+                      onChange={(e) => setMenyusuiForm({ ...menyusuiForm, produksi_asi: e.target.value })}
+                      className="w-full px-3 py-2 border rounded-xl"
+                    >
+                      <option value="Banyak">Banyak / Melimpah</option>
+                      <option value="Sedikit">Sedikit / Kurang</option>
+                      <option value="Tidak Ada">Tidak Ada</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-slate-700 font-medium mb-1">Masalah / Keluhan Menyusui</label>
+                  <input
+                    type="text"
+                    value={menyusuiForm.masalah_menyusui}
+                    onChange={(e) => setMenyusuiForm({ ...menyusuiForm, masalah_menyusui: e.target.value })}
+                    className="w-full px-3 py-2 border rounded-xl"
+                    placeholder="Puting lecet / bingung puting / dll"
+                  />
+                </div>
+
+                <div className="flex items-center gap-6 pt-2">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={menyusuiForm.asi_eksklusif}
+                      onChange={(e) => setMenyusuiForm({ ...menyusuiForm, asi_eksklusif: e.target.checked })}
+                      className="rounded"
+                    />
+                    ASI Eksklusif
+                  </label>
+
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={menyusuiForm.konseling_asi}
+                      onChange={(e) => setMenyusuiForm({ ...menyusuiForm, konseling_asi: e.target.checked })}
+                      className="rounded"
+                    />
+                    Diberikan Konseling
+                  </label>
+                </div>
+
+                <div className="flex justify-end gap-3 pt-3 border-t">
+                  <button
+                    type="button"
+                    onClick={() => setShowMenyusuiModal(false)}
+                    className="px-4 py-2 border rounded-xl text-slate-600 hover:bg-slate-50"
+                  >
+                    Batal
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={menyusuiSubmitting}
+                    className="px-5 py-2 bg-amber-600 text-white rounded-xl font-medium hover:bg-amber-700 disabled:opacity-50"
+                  >
+                    {menyusuiSubmitting ? 'Menyimpan...' : editingMenyusuiId ? 'Perbarui Pemantauan' : 'Simpan Pemantauan ASI'}
                   </button>
                 </div>
               </form>

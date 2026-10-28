@@ -108,6 +108,12 @@ class StatusGiziService
             'status_bbu' => $statusBbu,
             'status_tbu' => $statusTbu,
             'status_bbtb' => $statusBbtb,
+            'bbu' => $statusBbu,
+            'tbu' => $statusTbu,
+            'bbtb' => $statusBbtb,
+            'zs_bbu' => round($zBbu, 2),
+            'zs_tbu' => round($zTbu, 2),
+            'zs_bbtb' => round($zBbtb, 2),
         ];
     }
 
