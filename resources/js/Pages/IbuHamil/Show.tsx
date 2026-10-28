@@ -38,7 +38,7 @@ export default function Show({ bumil }: BumilShowProps) {
               <ArrowLeft className="w-4 h-4" />
               <span>Kembali ke Daftar Ibu Hamil</span>
             </Link>
-            <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight flex items-center gap-3">
+            <h1 className="text-2xl sm:text-3xl font-semibold text-slate-900 tracking-tight flex items-center gap-3">
               <span>{bumil.nama}</span>
               <span className="px-3 py-1 bg-brand-100 text-brand-700 rounded-full text-xs font-bold">
                 Kehamilan ke-G{bumil.kehamilan_ke}
@@ -102,22 +102,22 @@ export default function Show({ bumil }: BumilShowProps) {
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                 <div className="bg-slate-50 p-3.5 rounded-xl border border-slate-200/70 text-center">
                   <span className="text-[11px] text-slate-500 block">Usia Kehamilan</span>
-                  <div className="text-xl font-black text-slate-900">{latestExam.usia_kehamilan_minggu} <span className="text-xs font-normal">Mgg</span></div>
+                  <div className="text-xl font-bold text-slate-900">{latestExam.usia_kehamilan_minggu} <span className="text-xs font-normal">Mgg</span></div>
                 </div>
 
                 <div className="bg-slate-50 p-3.5 rounded-xl border border-slate-200/70 text-center">
                   <span className="text-[11px] text-slate-500 block">Berat Badan</span>
-                  <div className="text-xl font-black text-slate-900">{latestExam.berat_kg} <span className="text-xs font-normal">kg</span></div>
+                  <div className="text-xl font-bold text-slate-900">{latestExam.berat_kg} <span className="text-xs font-normal">kg</span></div>
                 </div>
 
                 <div className="bg-slate-50 p-3.5 rounded-xl border border-slate-200/70 text-center">
                   <span className="text-[11px] text-slate-500 block">Lingkar Lengan (LiLA)</span>
-                  <div className="text-xl font-black text-slate-900">{latestExam.lila_cm} <span className="text-xs font-normal">cm</span></div>
+                  <div className="text-xl font-bold text-slate-900">{latestExam.lila_cm} <span className="text-xs font-normal">cm</span></div>
                 </div>
 
                 <div className={`p-3.5 rounded-xl border text-center ${getStatusBadgeColor(latestExam.status_gizi_bumil).bg} ${getStatusBadgeColor(latestExam.status_gizi_bumil).border}`}>
                   <span className="text-[11px] font-semibold text-slate-600 block">Status KEK</span>
-                  <div className={`text-xl font-black ${getStatusBadgeColor(latestExam.status_gizi_bumil).text}`}>
+                  <div className={`text-xl font-bold ${getStatusBadgeColor(latestExam.status_gizi_bumil).text}`}>
                     {latestExam.status_gizi_bumil}
                   </div>
                 </div>

@@ -263,7 +263,7 @@ export default function Index({ childrenList = [], pengukuranList = [], masterOp
         {/* Page Header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
-            <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
+            <h1 className="text-2xl sm:text-3xl font-semibold text-slate-900 tracking-tight">
               Pencatatan Antropometri Balita
             </h1>
             <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
@@ -544,7 +544,7 @@ export default function Index({ childrenList = [], pengukuranList = [], masterOp
                         {selectedChild.nama_anak.charAt(0).toUpperCase()}
                       </div>
                       <div>
-                        <div className="font-extrabold text-slate-900">{selectedChild.nama_anak}</div>
+                        <div className="font-semibold text-slate-900">{selectedChild.nama_anak}</div>
                         <div className="text-[11px] text-slate-600">
                           {selectedChild.jenis_kelamin === 'L' ? 'Laki-laki' : 'Perempuan'} • Usia: <strong>{ageMonths} Bulan</strong>
                         </div>
@@ -641,11 +641,11 @@ export default function Index({ childrenList = [], pengukuranList = [], masterOp
                     <div className="grid grid-cols-2 gap-2 text-xs">
                       <div className="bg-white p-2 rounded-xl border border-brand-100">
                         <span className="text-[10px] text-slate-400 block">Status BB/U</span>
-                        <span className="font-extrabold text-slate-900">{liveStatus.statusBbu}</span>
+                        <span className="font-semibold text-slate-900">{liveStatus.status_bbu}</span>
                       </div>
                       <div className="bg-white p-2 rounded-xl border border-brand-100">
                         <span className="text-[10px] text-slate-400 block">Status TB/U</span>
-                        <span className="font-extrabold text-brand-700">{liveStatus.statusTbu}</span>
+                        <span className="font-semibold text-brand-700">{liveStatus.status_tbu}</span>
                       </div>
                     </div>
                   </div>

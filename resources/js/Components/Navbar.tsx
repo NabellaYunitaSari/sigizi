@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Link, router, usePage } from '@inertiajs/react';
-import { LogOut, HeartPulse, User, ShieldCheck } from 'lucide-react';
+import { LogOut, HeartPulse, Menu, X } from 'lucide-react';
+import Sidebar from './Sidebar';
 
 export interface UserSession {
   id: string;
@@ -12,67 +13,49 @@ export interface UserSession {
   nama_pos?: string;
 }
 
-interface NavbarProps {
-  user?: UserSession | null;
-}
+interface NavbarProps { user?: UserSession | null; }
 
 export default function Navbar({ user: propUser }: NavbarProps) {
   const page = usePage();
-  const pageUser = (page.props as any).auth?.user as UserSession | null;
-  const user = propUser || pageUser;
+  const user = propUser || (page.props as any).auth?.user as UserSession | null;
+  const [menuOpen, setMenuOpen] = useState(false);
+  const dialog = useRef<HTMLDialogElement>(null);
+  const menuButton = useRef<HTMLButtonElement>(null);
 
-  const handleLogout = (e: React.MouseEvent) => {
-    e.preventDefault();
-    router.post('/logout');
-  };
+  useEffect(() => { setMenuOpen(false); }, [page.url]);
+  useEffect(() => {
+    if (menuOpen) {
+      dialog.current?.showModal();
+      const previousOverflow = document.body.style.overflow;
+      document.body.style.overflow = 'hidden';
+      return () => {
+        document.body.style.overflow = previousOverflow;
+        dialog.current?.close();
+        menuButton.current?.focus();
+      };
+    }
+  }, [menuOpen]);
 
-  return (
-    <header className="sticky top-0 z-40 bg-white/90 backdrop-blur-md border-b border-slate-200/80 px-4 lg:px-8 py-3 transition-all shadow-sm">
-      <div className="max-w-7xl mx-auto flex items-center justify-between">
-        {/* Brand */}
-        <Link href={user ? (user.role === 'kader' ? '/dashboard' : '/dashboard-desa') : '/'} className="flex items-center space-x-3 group">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-brand-600 to-teal-400 flex items-center justify-center text-white shadow-md shadow-brand-500/20 group-hover:scale-105 transition-transform">
-            <HeartPulse className="w-6 h-6" />
-          </div>
-          <div>
-            <div className="font-bold text-slate-900 tracking-tight text-lg flex items-center gap-1.5">
-              SIGIZI <span className="text-brand-600">Desa</span>
-            </div>
-          </div>
-        </Link>
-
-        {/* Right User Info */}
-        {user ? (
-          <div className="flex items-center space-x-3">
-            <div className="hidden sm:flex flex-col items-end text-right">
-              <span className="text-sm font-semibold text-slate-800 flex items-center gap-1">
-                {user.nama}
-                {user.role === 'admin' && <ShieldCheck className="w-4 h-4 text-emerald-600 inline" />}
-              </span>
-              <span className="text-xs text-slate-500 font-medium">
-                {user.role === 'kader' ? `Kader Pos ${user.nama_pos || ''}` : user.role === 'koordinator' ? 'Koordinator Desa' : 'Administrator'}
-              </span>
-            </div>
-
-            <button
-              onClick={handleLogout}
-              className="inline-flex items-center justify-center space-x-1.5 px-3 py-2 rounded-xl text-slate-600 hover:text-rose-600 hover:bg-rose-50 transition-colors text-sm font-medium border border-slate-200 min-h-[44px] min-w-[44px]"
-              title="Keluar"
-            >
-              <LogOut className="w-4 h-4" />
-              <span className="hidden sm:inline">Keluar</span>
-            </button>
-          </div>
-        ) : (
-          <Link
-            href="/login"
-            className="px-4 py-2 bg-brand-600 hover:bg-brand-700 text-white rounded-xl font-medium text-sm transition-all shadow-sm shadow-brand-600/30 flex items-center space-x-2 min-h-[44px]"
-          >
-            <User className="w-4 h-4" />
-            <span>Masuk Kader</span>
+  return <>
+    <header className="app-navbar sticky top-0 z-40 border-b border-slate-200 bg-[#fffefa] px-4 md:px-6 lg:px-8">
+      <div className="flex h-[76px] items-center justify-between gap-3">
+        <div className="flex items-center gap-3">
+          {user && <button ref={menuButton} type="button" onClick={() => setMenuOpen(true)} aria-label="Buka menu navigasi" aria-expanded={menuOpen} aria-controls="mobile-navigation" className="flex h-11 w-11 items-center justify-center rounded-lg border border-slate-200 text-slate-600 md:hidden"><Menu className="h-5 w-5" /></button>}
+          <Link href={user ? (user.role === 'kader' ? '/dashboard' : '/dashboard-desa') : '/'} className="flex items-center gap-2.5" aria-label="SIGIZI, beranda">
+            <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-brand-800 text-white"><HeartPulse className="h-6 w-6" strokeWidth={1.6} /></span>
+            <span><span className="block text-xl font-bold tracking-[-0.06em] text-brand-900">sigizi<span className="text-[#bd8049]">.</span></span><span className="block text-[10px] tracking-wide text-slate-500">DESA SUKOMALO</span></span>
           </Link>
-        )}
+        </div>
+        {user ? <div className="flex items-center gap-3 sm:gap-4">
+          <div className="hidden text-right sm:block"><p className="text-sm font-semibold text-slate-800">{user.nama}</p><p className="mt-0.5 text-[11px] text-slate-500">{user.role === 'kader' ? 'Kader posyandu' : user.role === 'koordinator' ? 'Koordinator desa' : 'Administrator'}</p></div>
+          <span aria-hidden="true" className="flex h-10 w-10 items-center justify-center rounded-full border border-brand-200 bg-brand-50 text-sm font-semibold text-brand-800">{user.nama.trim().split(/\s+/).slice(0, 2).map(name => name[0]).join('')}</span>
+          <button type="button" onClick={() => router.post('/logout')} className="flex h-11 items-center justify-center gap-2 rounded-lg px-3 text-xs font-medium text-slate-500 hover:bg-rose-50 hover:text-rose-700" aria-label="Keluar dari akun" title="Keluar dari akun"><LogOut className="h-4 w-4" /><span className="hidden xl:inline">Keluar</span></button>
+        </div> : <Link href="/login" className="inline-flex min-h-[44px] items-center rounded-lg bg-brand-800 px-5 text-sm font-semibold text-white hover:bg-brand-900">Masuk akun</Link>}
       </div>
     </header>
-  );
+    {menuOpen && <dialog ref={dialog} id="mobile-navigation" aria-labelledby="mobile-menu-title" onCancel={() => setMenuOpen(false)} onClick={event => { if (event.target === event.currentTarget) setMenuOpen(false); }} className="navigation-dialog fixed inset-y-0 left-0 m-0 h-dvh max-h-none w-[min(320px,88vw)] max-w-none overflow-y-auto border-0 bg-[#fffefa] p-0 shadow-xl backdrop:bg-slate-900/40">
+      <div className="flex items-center justify-between border-b border-slate-200 px-5 py-4"><h2 id="mobile-menu-title" className="font-semibold text-brand-900">Menu SIGIZI</h2><button autoFocus type="button" onClick={() => setMenuOpen(false)} aria-label="Tutup menu" className="flex h-11 w-11 items-center justify-center rounded-lg text-slate-500 hover:bg-brand-50"><X className="h-5 w-5" /></button></div>
+      <Sidebar user={user} mobile onNavigate={() => setMenuOpen(false)} />
+    </dialog>}
+  </>;
 }

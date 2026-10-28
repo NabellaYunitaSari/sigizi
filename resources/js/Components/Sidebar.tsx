@@ -1,146 +1,55 @@
 import React from 'react';
 import { Link, usePage } from '@inertiajs/react';
-import {
-  LayoutDashboard,
-  Baby,
-  Heart,
-  FileSpreadsheet,
-  Users,
-  Building2,
-  ChevronRight,
-  Sliders,
-  Database,
-} from 'lucide-react';
-import { UserSession } from './Navbar';
+import { LayoutDashboard, Baby, Heart, FileSpreadsheet, Users, Sliders, Database, Scale, Syringe, Pill, MapPin } from 'lucide-react';
+import type { UserSession } from './Navbar';
 
 interface SidebarProps {
   user?: UserSession | null;
+  mobile?: boolean;
+  onNavigate?: () => void;
 }
 
-export default function Sidebar({ user: propUser }: SidebarProps) {
+export default function Sidebar({ user: propUser, mobile = false, onNavigate }: SidebarProps) {
   const page = usePage();
-  const pageUser = (page.props as any).auth?.user as UserSession | null;
-  const user = propUser || pageUser;
-  const pathname = page.url;
-
+  const user = propUser || (page.props as any).auth?.user as UserSession | null;
+  const pathname = page.url.split('?')[0];
   if (!user) return null;
 
-  const isKader = user.role === 'kader';
-  const isKoordinatorOrAdmin = user.role === 'koordinator' || user.role === 'admin';
-
-  const navItems = [
-    ...(isKader
-      ? [
-          {
-            label: 'Dashboard Posyandu',
-            href: '/dashboard',
-            icon: LayoutDashboard,
-          },
-        ]
-      : []),
-    ...(isKoordinatorOrAdmin
-      ? [
-          {
-            label: 'Dashboard Desa',
-            href: '/dashboard-desa',
-            icon: Building2,
-          },
-          {
-            label: 'Posyandu Saya',
-            href: '/dashboard',
-            icon: LayoutDashboard,
-          },
-          {
-            label: 'Master Data',
-            href: '/master-data',
-            icon: Database,
-          },
-        ]
-      : []),
-    {
-      label: 'Data Anak Balita',
-      href: '/anak',
-      icon: Baby,
-    },
-    {
-      label: 'Data Ibu Hamil',
-      href: '/ibu-hamil',
-      icon: Heart,
-    },
-    {
-      label: 'Laporan & Rekap',
-      href: '/laporan',
-      icon: FileSpreadsheet,
-    },
-    ...(isKoordinatorOrAdmin
-      ? [
-          {
-            label: 'Kelola Standar Posyandu',
-            href: '/kelola-standar',
-            icon: Sliders,
-          },
-          {
-            label: 'Kelola Akun Kader',
-            href: '/kelola-user',
-            icon: Users,
-          },
-        ]
-      : []),
+  const canManage = user.role === 'koordinator' || user.role === 'admin';
+  const groups = [
+    { label: 'Ringkasan', items: [
+      { label: 'Dashboard', href: canManage ? '/dashboard-desa' : '/dashboard', icon: LayoutDashboard },
+    ] },
+    { label: 'Pelayanan', items: [
+      { label: 'Data balita', href: '/anak', icon: Baby },
+      { label: 'Data ibu hamil', href: '/ibu-hamil', icon: Heart },
+      { label: 'Pengukuran', href: '/pengukuran', icon: Scale },
+      { label: 'Imunisasi', href: '/imunisasi', icon: Syringe },
+      { label: 'Vitamin', href: '/vitamin', icon: Pill },
+      { label: 'Laporan & rekap', href: '/laporan', icon: FileSpreadsheet },
+    ] },
+    ...(canManage ? [{ label: 'Pengelolaan', items: [
+      { label: 'Master data', href: '/master-data', icon: Database },
+      { label: 'Standar layanan', href: '/kelola-standar', icon: Sliders },
+      { label: 'Akun pengguna', href: '/kelola-user', icon: Users },
+    ] }] : []),
   ];
 
   return (
-    <aside className="hidden md:flex flex-col w-64 bg-white border-r border-slate-200/80 shrink-0 min-h-[calc(100vh-65px)] p-4 space-y-6">
-      {/* Posyandu Badge Info */}
-      <div className="bg-gradient-to-br from-brand-50 to-teal-50/50 p-3.5 rounded-2xl border border-brand-100/80">
-        <div className="font-bold text-slate-800 text-sm">
-          {user.role === 'kader' ? `Pos ${user.nama_pos || ''}` : '6 Posyandu Aktif'}
-        </div>
-        <div className="text-xs text-slate-500 mt-0.5">
-          {user.role === 'kader' ? 'Petugas Input Pengukuran' : 'Monitoring & Evaluasi'}
-        </div>
+    <aside className={mobile ? 'flex flex-col gap-6 p-5' : 'app-sidebar hidden md:flex w-60 xl:w-64 shrink-0 flex-col gap-7 border-r border-slate-200 px-5 py-7'}>
+      <div className="flex items-start gap-3 rounded-xl border border-brand-100 bg-brand-50/70 p-3.5">
+        <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-brand-700" />
+        <div><p className="text-sm font-semibold text-brand-900">{user.role === 'kader' ? `Posyandu ${user.nama_pos || 'Saya'}` : 'Desa Sukomalo'}</p><p className="mt-1 text-xs leading-relaxed text-brand-700">{user.role === 'kader' ? 'Ruang kerja kader posyandu' : 'Pemantauan layanan posyandu'}</p></div>
       </div>
-
-      {/* Main Navigation */}
-      <nav className="space-y-1.5 flex-1">
-        {navItems.map((item) => {
-          const Icon = item.icon;
-          const isActive = pathname === item.href || (
-            item.href !== '/dashboard' &&
-            item.href !== '/dashboard-desa' &&
-            pathname.startsWith(item.href)
-          );
-
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={`flex items-center justify-between px-3.5 py-3 rounded-xl font-medium text-sm transition-all min-h-[44px] ${
-                isActive
-                  ? 'bg-brand-600 text-white shadow-md shadow-brand-600/20'
-                  : 'text-slate-600 hover:bg-slate-100/80 hover:text-slate-900'
-              }`}
-            >
-              <div className="flex items-center space-x-3">
-                <Icon className={`w-5 h-5 ${isActive ? 'text-white' : 'text-slate-500'}`} />
-                <span>{item.label}</span>
-              </div>
-              <div className="flex items-center gap-1.5">
-                {item.badge && (
-                  <span
-                    className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${
-                      isActive
-                        ? 'bg-white/20 text-white border-white/30'
-                        : item.badgeColor || 'bg-slate-100 text-slate-700 border-slate-200'
-                    }`}
-                  >
-                    {item.badge}
-                  </span>
-                )}
-                {isActive && <ChevronRight className="w-4 h-4 text-brand-200" />}
-              </div>
-            </Link>
-          );
-        })}
+      <nav aria-label={mobile ? 'Menu seluler' : 'Menu utama'} className="flex-1 space-y-6">
+        {groups.map(group => <div key={group.label}>
+          <p className="mb-2 px-3 text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-500">{group.label}</p>
+          <div className="space-y-1">{group.items.map(item => {
+            const active = pathname === item.href || pathname.startsWith(`${item.href}/`);
+            const Icon = item.icon;
+            return <Link key={item.href} href={item.href} onClick={onNavigate} aria-current={active ? 'page' : undefined} className={`group flex min-h-[44px] items-center gap-3 rounded-lg px-3 py-2.5 text-[13px] transition-colors ${active ? 'bg-brand-800 font-semibold text-white' : 'font-medium text-slate-600 hover:bg-brand-50 hover:text-brand-900'}`}><Icon className={`h-[18px] w-[18px] shrink-0 ${active ? 'text-brand-200' : 'text-slate-400 group-hover:text-brand-700'}`} strokeWidth={1.7} /><span>{item.label}</span>{active && <span className="ml-auto h-1.5 w-1.5 rounded-full bg-brand-200" />}</Link>;
+          })}</div>
+        </div>)}
       </nav>
     </aside>
   );

@@ -340,7 +340,7 @@ export default function Index({
               <Database className="w-4 h-4" />
               <span>Kelola Sasaran • Khusus Koordinator & Admin</span>
             </div>
-            <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
+            <h1 className="text-2xl sm:text-3xl font-semibold text-slate-900 tracking-tight">
               Master Data Posyandu
             </h1>
             <p className="text-xs sm:text-sm text-slate-500 mt-0.5">

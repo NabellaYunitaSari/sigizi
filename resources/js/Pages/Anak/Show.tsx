@@ -93,7 +93,7 @@ export default function Show({ child }: ChildShowProps) {
               <ArrowLeft className="w-4 h-4" />
               <span>Kembali ke Daftar Anak</span>
             </Link>
-            <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight flex items-center gap-3">
+            <h1 className="text-2xl sm:text-3xl font-semibold text-slate-900 tracking-tight flex items-center gap-3">
               <span>{child.nama_anak}</span>
               <span
                 className={`px-3 py-1 rounded-full text-xs font-bold ${
@@ -301,7 +301,7 @@ export default function Show({ child }: ChildShowProps) {
                 <span className="text-[10px] font-bold text-amber-800 uppercase tracking-wider block">
                   Kapsul Vitamin A
                 </span>
-                <div className="font-extrabold text-slate-900 text-sm">
+                <div className="font-semibold text-slate-900 text-sm">
                   {ageM < 12 ? 'Kapsul Biru (100.000 IU)' : 'Kapsul Merah (200.000 IU)'}
                 </div>
                 <div className="text-[11px] text-amber-700">
@@ -313,7 +313,7 @@ export default function Show({ child }: ChildShowProps) {
                 <span className="text-[10px] font-bold text-emerald-800 uppercase tracking-wider block">
                   Obat Cacing
                 </span>
-                <div className="font-extrabold text-slate-900 text-sm">
+                <div className="font-semibold text-slate-900 text-sm">
                   {ageM >= 12 ? 'Wajib Diberikan 6 Bln Sekali' : 'Belum Wajib (< 12 Bln)'}
                 </div>
                 <div className="text-[11px] text-emerald-700">

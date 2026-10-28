@@ -1,13 +1,15 @@
 import React, { useState, useMemo } from 'react';
 import { Link, usePage } from '@inertiajs/react';
 import AppShell from '../../Components/AppShell';
+import ServiceBarChart, { SERVICE_CHART_COLORS } from '../../Components/ServiceBarChart';
+import GenderCompositionChart from '../../Components/GenderCompositionChart';
 import {
   CheckCircle2,
   AlertTriangle,
   ArrowRight,
   Baby,
   Calendar,
-  Sparkles,
+  HeartPulse,
   Users,
   BarChart3,
   Syringe,
@@ -21,18 +23,7 @@ import {
   ShieldAlert,
   Filter,
 } from 'lucide-react';
-import {
-  ResponsiveContainer,
-  PieChart,
-  Pie,
-  Cell,
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-} from 'recharts';
+
 import { getStatusBadgeColor } from '../../lib/statusGizi';
 import { UserSession } from '../../Components/Navbar';
 
@@ -67,7 +58,10 @@ const getPeriodLabel = (month: string, year: string) => {
   return `${mName} ${year}`;
 };
 
-interface DashboardProps {
+export interface DashboardProps {
+  embedded?: boolean;
+  posyanduName?: string;
+  headerActions?: React.ReactNode;
   childrenInPos: any[];
   bumilList?: any[];
   totalAnak: number;
@@ -106,7 +100,10 @@ interface DashboardProps {
   pmtBumilList?: any[];
 }
 
-export default function Dashboard({
+export function DashboardContent({
+  embedded = false,
+  posyanduName,
+  headerActions,
   childrenInPos = [],
   bumilList = [],
   totalAnak = 0,
@@ -124,6 +121,7 @@ export default function Dashboard({
 }: DashboardProps) {
   const page = usePage();
   const user = (page.props as any).auth?.user as UserSession | null;
+  const Heading = embedded ? 'h2' : 'h1';
 
   // Modal State for Growth Status Click
   const [selectedCategory, setSelectedCategory] = useState<{
@@ -414,126 +412,48 @@ export default function Dashboard({
     };
   }, [bumilList, totalBumil, trimesterChartData, chart4Month, chart4Year]);
 
-  // Tooltips
-  const GenderTooltip = ({ active, payload }: any) => {
-    if (active && payload && payload.length) {
-      const data = payload[0].payload;
-      return (
-        <div className="bg-slate-900/90 backdrop-blur-md text-white px-3.5 py-2 rounded-xl text-xs shadow-xl border border-slate-700/50 space-y-0.5">
-          <div className="font-bold flex items-center gap-1.5">
-            <span className="w-2.5 h-2.5 rounded-full inline-block" style={{ backgroundColor: data.color }} />
-            <span>{data.name}</span>
-          </div>
-          <div>Jumlah: <span className="font-bold text-slate-100">{data.value} Anak</span></div>
-          <div>Persentase: <span className="font-bold text-brand-300">{data.percentage}%</span></div>
-        </div>
-      );
-    }
-    return null;
-  };
-
-  const GrowthTooltip = ({ active, payload }: any) => {
-    if (active && payload && payload.length) {
-      const data = payload[0].payload;
-      return (
-        <div className="bg-slate-900/90 backdrop-blur-md text-white px-3.5 py-2 rounded-xl text-xs shadow-xl border border-slate-700/50 space-y-0.5">
-          <div className="font-bold text-amber-300">{data.fullName}</div>
-          <div>Jumlah Balita: <span className="font-bold text-white text-sm">{data.count} Anak</span></div>
-          <div className="text-[10px] text-slate-300 italic pt-0.5">Klik bar untuk melihat daftar anak</div>
-        </div>
-      );
-    }
-    return null;
-  };
-
-  const ImmunizationTooltip = ({ active, payload }: any) => {
-    if (active && payload && payload.length) {
-      const data = payload[0].payload;
-      return (
-        <div className="bg-slate-900/90 backdrop-blur-md text-white px-3.5 py-2.5 rounded-xl text-xs shadow-xl border border-slate-700/50 space-y-1">
-          <div className="font-bold text-teal-300 text-sm">{data.name}</div>
-          <div className="grid grid-cols-2 gap-x-3 text-[11px]">
-            <span>Sudah Menerima:</span>
-            <span className="font-bold text-emerald-400 text-right">{data.sudah} anak</span>
-            <span>Belum Menerima:</span>
-            <span className="font-bold text-rose-400 text-right">{data.belum} anak</span>
-            <span>Cakupan:</span>
-            <span className="font-bold text-teal-300 text-right">{data.percentage}%</span>
-          </div>
-        </div>
-      );
-    }
-    return null;
-  };
-
-  const TrimesterTooltip = ({ active, payload }: any) => {
-    if (active && payload && payload.length) {
-      const data = payload[0].payload;
-      return (
-        <div className="bg-slate-900/90 backdrop-blur-md text-white px-3.5 py-2 rounded-xl text-xs shadow-xl border border-slate-700/50 space-y-0.5">
-          <div className="font-bold text-pink-300 text-sm">{data.name}</div>
-          <div className="text-[10px] text-slate-300">{data.desc}</div>
-          <div>Jumlah Ibu Hamil: <span className="font-bold text-white text-sm">{data.count} Bumil</span></div>
-        </div>
-      );
-    }
-    return null;
-  };
-
   // Greeting
   const kaderName = user?.nama ? user.nama.split(',')[0].replace(/^(Kader|Bu|Bpk\.)\s*/i, '') : 'Kader';
 
   return (
-    <AppShell user={user}>
+    <>
       <div className="space-y-6">
         {/* Header Title */}
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
-            Dashboard
-          </h1>
-          <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
-            Ringkasan pelayanan hari ini khusus Posyandu {user?.nama_pos || 'Aktif'}
-          </p>
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="min-w-0">
+            <Heading id={embedded ? 'posyandu-filter-title' : undefined} className="text-2xl sm:text-3xl font-semibold text-slate-900 tracking-tight">
+              Ringkasan posyandu
+            </Heading>
+          </div>
+          {headerActions}
         </div>
 
-        {/* Welcome Banner Box (matching mockup) */}
-        <div className="bg-gradient-to-r from-blue-50/90 via-sky-50/70 to-indigo-50/50 p-5 rounded-2xl border border-blue-100 shadow-sm flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        {!embedded && <div className="page-welcome">
           <div className="space-y-1">
             <h2 className="text-base sm:text-lg font-bold text-slate-900 flex items-center gap-2">
-              <span>Selamat datang, Bu {kaderName}</span>
-              <span className="animate-bounce inline-block">👋</span>
+              <span>Selamat datang, {kaderName}.</span>
             </h2>
             <p className="text-xs sm:text-sm text-slate-600">
-              <span className="font-bold text-slate-800">{countMeasured} balita</span> dan <span className="font-bold text-slate-800">{totalBumil} ibu hamil</span> terdaftar pelayanan periode {currentMonthName}.
+              Sudah ada <span className="font-semibold text-brand-900">{countMeasured} balita yang diukur</span> pada periode {currentMonthName}. Terima kasih atas pendampingannya.
             </p>
           </div>
 
-          <div className="px-4 py-2 bg-white/90 backdrop-blur-sm rounded-xl border border-blue-200/80 shadow-sm text-xs text-slate-700 font-semibold flex items-center gap-2.5 shrink-0 self-start sm:self-auto">
-            <Clock className="w-4 h-4 text-brand-600" />
-            <div>
-              <div className="text-[10px] text-slate-400 font-normal uppercase">Pelayanan Hari Ini</div>
-              <div className="font-bold text-slate-800">08.00 - 12.00 WIB</div>
-            </div>
-          </div>
-        </div>
+          <Link href="/pengukuran" className="primary-action shrink-0 self-start sm:self-auto"><span>Catat pengukuran</span><ArrowRight className="h-4 w-4" /></Link>
+        </div>}
 
         {/* Top 4 KPI Cards (Matching mockup style) */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 xl:grid-cols-4 gap-3 sm:gap-4">
           {/* Card 1: Balita Terdaftar */}
           <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm space-y-3 relative overflow-hidden">
             <div className="flex items-center justify-between">
               <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center">
                 <Baby className="w-5 h-5" />
               </div>
-              <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                <span>Aktif</span>
-              </span>
             </div>
             <div>
-              <div className="text-3xl font-black text-slate-900">{totalAnak}</div>
+              <div className="text-3xl font-bold text-slate-900">{totalAnak}</div>
               <div className="text-xs font-semibold text-slate-600 mt-0.5">Balita Terdaftar</div>
-              <div className="text-[11px] text-slate-400 mt-1">Posyandu {user?.nama_pos || ''}</div>
+              <div className="text-[11px] text-slate-400 mt-1">{posyanduName || (user?.nama_pos ? `Posyandu ${user.nama_pos}` : 'Semua posyandu')}</div>
             </div>
           </div>
 
@@ -543,13 +463,9 @@ export default function Dashboard({
               <div className="w-10 h-10 rounded-xl bg-brand-50 text-brand-600 flex items-center justify-center">
                 <Heart className="w-5 h-5" />
               </div>
-              <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                <span>Aktif</span>
-              </span>
             </div>
             <div>
-              <div className="text-3xl font-black text-slate-900">{totalBumil}</div>
+              <div className="text-3xl font-bold text-slate-900">{totalBumil}</div>
               <div className="text-xs font-semibold text-slate-600 mt-0.5">Ibu Hamil Terdaftar</div>
               <div className="text-[11px] text-slate-400 mt-1">Tersebar Trimester I - III</div>
             </div>
@@ -561,13 +477,9 @@ export default function Dashboard({
               <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
                 <CheckCircle2 className="w-5 h-5" />
               </div>
-              <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                <span>Aktif</span>
-              </span>
             </div>
             <div>
-              <div className="text-3xl font-black text-slate-900">{countMeasured}</div>
+              <div className="text-3xl font-bold text-slate-900">{countMeasured}</div>
               <div className="text-xs font-semibold text-slate-600 mt-0.5">Balita Diukur Bulan Ini</div>
               <div className="text-[11px] text-emerald-600 font-bold mt-1">{progressPercent}% dari terdaftar</div>
             </div>
@@ -577,15 +489,11 @@ export default function Dashboard({
           <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm space-y-3 relative overflow-hidden">
             <div className="flex items-center justify-between">
               <div className="w-10 h-10 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center">
-                <Sparkles className="w-5 h-5" />
+                <HeartPulse className="w-5 h-5" />
               </div>
-              <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                <span>Aktif</span>
-              </span>
             </div>
             <div>
-              <div className="text-3xl font-black text-slate-900">{totalBumil}</div>
+              <div className="text-3xl font-bold text-slate-900">{totalBumil}</div>
               <div className="text-xs font-semibold text-slate-600 mt-0.5">Ibu Hamil Dipantau</div>
               <div className="text-[11px] text-slate-400 mt-1">Status Gizi & KEK</div>
             </div>
@@ -596,8 +504,8 @@ export default function Dashboard({
         {/* BARIS 1 VISUALISASI: KOMPOSISI & STATUS    */}
         {/* ========================================== */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* CHART 1: Komposisi Balita (Donut Chart matching mockup) */}
-          <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm space-y-4 flex flex-col justify-between">
+          {/* Komposisi balita */}
+          <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm flex flex-col gap-4">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-100">
               <div>
                 <h3 className="font-bold text-slate-900 text-base flex items-center gap-2">
@@ -635,51 +543,7 @@ export default function Dashboard({
             </div>
 
             {filteredGenderData.total > 0 ? (
-              <div className="flex flex-col sm:flex-row items-center justify-center gap-6 my-2">
-                {/* Donut Graphic */}
-                <div className="w-44 h-44 relative shrink-0">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <PieChart>
-                      <Pie
-                        data={filteredGenderData.data}
-                        cx="50%"
-                        cy="50%"
-                        innerRadius={50}
-                        outerRadius={80}
-                        paddingAngle={3}
-                        dataKey="value"
-                      >
-                        {filteredGenderData.data.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={entry.color} />
-                        ))}
-                      </Pie>
-                      <Tooltip content={<GenderTooltip />} />
-                    </PieChart>
-                  </ResponsiveContainer>
-
-                  {/* Center Text inside Donut */}
-                  <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                    <span className="text-2xl font-black text-slate-900">{filteredGenderData.total}</span>
-                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Balita</span>
-                  </div>
-                </div>
-
-                {/* Legend Details */}
-                <div className="space-y-3.5 w-full sm:w-auto">
-                  {filteredGenderData.data.map((g) => (
-                    <div key={g.name} className="flex items-center justify-between sm:justify-start gap-4">
-                      <div className="flex items-center gap-2">
-                        <span className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: g.color }} />
-                        <span className="text-xs font-bold text-slate-700">{g.name}</span>
-                      </div>
-                      <div className="text-right text-xs">
-                        <span className="font-extrabold text-slate-900">{g.value}</span>
-                        <span className="font-medium text-slate-400 ml-1.5">({g.percentage}%)</span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
+              <GenderCompositionChart data={filteredGenderData.data} />
             ) : (
               <div className="h-44 flex flex-col items-center justify-center text-center p-6 border-2 border-dashed border-slate-200 rounded-2xl">
                 <Users className="w-8 h-8 text-slate-300 mb-2" />
@@ -700,7 +564,7 @@ export default function Dashboard({
                   </h3>
                   <span className="text-[10px] font-bold px-2 py-0.5 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-full flex items-center gap-1">
                     <Info className="w-3 h-3" />
-                    <span>Klik Bar</span>
+                    <span>Lihat rincian</span>
                   </span>
                 </div>
                 <p className="text-xs text-slate-500 mt-0.5">
@@ -734,43 +598,19 @@ export default function Dashboard({
             </div>
 
             {filteredGrowthTotal > 0 ? (
-              <div className="h-52 w-full">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart
-                    data={filteredGrowthData}
-                    margin={{ top: 15, right: 10, left: -20, bottom: 25 }}
-                  >
-                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                    <XAxis
-                      dataKey="name"
-                      tick={{ fontSize: 10, fill: '#64748b', fontWeight: 600 }}
-                      interval={0}
-                      angle={-20}
-                      textAnchor="end"
-                    />
-                    <YAxis allowDecimals={false} tick={{ fontSize: 11, fill: '#64748b' }} />
-                    <Tooltip content={<GrowthTooltip />} />
-                    <Bar
-                      dataKey="count"
-                      radius={[6, 6, 0, 0]}
-                      className="cursor-pointer transition-opacity hover:opacity-80"
-                      label={{ position: 'top', fill: '#334155', fontSize: 11, fontWeight: 'bold' }}
-                      onClick={(data) => {
-                        if (data && data.fullName) {
-                          setSelectedCategory({
-                            fullName: data.fullName,
-                            children: data.children || [],
-                          });
-                        }
-                      }}
-                    >
-                      {filteredGrowthData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={entry.color} />
-                      ))}
-                    </Bar>
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
+              <ServiceBarChart
+                description="Status pertumbuhan balita"
+                unit="balita"
+                minWidth={480}
+                data={[{ name: 'Status pertumbuhan', ...Object.fromEntries(filteredGrowthData.map((item, index) => [`growth_${index}`, item.count])) }]}
+                series={filteredGrowthData.map((item, index) => ({ key: `growth_${index}`, label: item.name }))}
+                onBarClick={key => {
+                  const category = filteredGrowthData[Number(key.replace('growth_', ''))];
+                  if (category) {
+                    setSelectedCategory({ fullName: category.fullName, children: category.children || [] });
+                  }
+                }}
+              />
             ) : (
               <div className="h-52 flex flex-col items-center justify-center text-center p-6 border-2 border-dashed border-slate-200 rounded-2xl">
                 <BarChart3 className="w-8 h-8 text-slate-300 mb-2" />
@@ -785,16 +625,16 @@ export default function Dashboard({
         {/* BARIS 2 VISUALISASI: IMUNISASI & TRIMESTER */}
         {/* ========================================== */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* CHART 3: Cakupan Imunisasi Balita (Horizontal Bar Chart matching mockup) */}
+          {/* Cakupan imunisasi */}
           <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm space-y-4 flex flex-col justify-between">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-100">
               <div>
                 <h3 className="font-bold text-slate-900 text-base flex items-center gap-2">
-                  <Syringe className="w-5 h-5 text-teal-600" />
-                  <span>Cakupan Imunisasi</span>
+                  <Syringe className="w-5 h-5 text-brand-600" />
+                  <span>Imunisasi Balita</span>
                 </h3>
                 <p className="text-xs text-slate-500 mt-0.5">
-                  Jadwal imunisasi dasar • {getPeriodLabel(chart3Month, chart3Year)}
+                  Penerimaan imunisasi dasar • {getPeriodLabel(chart3Month, chart3Year)}
                 </p>
               </div>
 
@@ -823,46 +663,25 @@ export default function Dashboard({
               </div>
             </div>
 
-            <div className="h-56 w-full">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart
-                  layout="vertical"
-                  data={filteredImmunizationData}
-                  margin={{ top: 5, right: 35, left: 25, bottom: 5 }}
-                >
-                  <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#f1f5f9" />
-                  <XAxis
-                    type="number"
-                    domain={[0, 100]}
-                    tickFormatter={(v) => `${v}%`}
-                    tick={{ fontSize: 11, fill: '#64748b' }}
-                  />
-                  <YAxis
-                    type="category"
-                    dataKey="name"
-                    tick={{ fontSize: 11, fill: '#334155', fontWeight: 600 }}
-                    width={90}
-                  />
-                  <Tooltip content={<ImmunizationTooltip />} />
-                  <Bar
-                    dataKey="percentage"
-                    fill="#0d9488"
-                    radius={[0, 6, 6, 0]}
-                    barSize={14}
-                    label={{ position: 'right', fill: '#0f766e', fontSize: 11, fontWeight: 'bold', formatter: (val: any) => `${val}%` }}
-                  />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
+            <ServiceBarChart
+              description="Persentase cakupan imunisasi balita"
+              unit="%"
+              maxValue={100}
+              minWidth={560}
+              data={filteredImmunizationData.map(item => ({ name: item.name, percentage: item.percentage }))}
+              series={[
+                { key: 'percentage', label: 'Cakupan imunisasi', color: SERVICE_CHART_COLORS[1] },
+              ]}
+            />
           </div>
 
-          {/* CHART 4: Distribusi Ibu Hamil (Vertical Bar Chart matching mockup) */}
+          {/* Distribusi ibu hamil */}
           <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm space-y-4 flex flex-col justify-between">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-100">
               <div>
                 <h3 className="font-bold text-slate-900 text-base flex items-center gap-2">
                   <Heart className="w-5 h-5 text-brand-600" />
-                  <span>Distribusi Ibu Hamil</span>
+                  <span>Ibu Hamil</span>
                 </h3>
                 <p className="text-xs text-slate-500 mt-0.5">
                   {filteredTrimesterData.total} ibu hamil aktif • per trimester ({getPeriodLabel(chart4Month, chart4Year)})
@@ -895,32 +714,13 @@ export default function Dashboard({
             </div>
 
             {filteredTrimesterData.total > 0 ? (
-              <div className="h-56 w-full">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart
-                    data={filteredTrimesterData.data}
-                    margin={{ top: 15, right: 20, left: -15, bottom: 20 }}
-                  >
-                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                    <XAxis
-                      dataKey="name"
-                      tick={{ fontSize: 11, fill: '#334155', fontWeight: 700 }}
-                    />
-                    <YAxis allowDecimals={false} tick={{ fontSize: 11, fill: '#64748b' }} />
-                    <Tooltip content={<TrimesterTooltip />} />
-                    <Bar
-                      dataKey="count"
-                      radius={[8, 8, 0, 0]}
-                      barSize={42}
-                      label={{ position: 'top', fill: '#334155', fontSize: 12, fontWeight: 'bold' }}
-                    >
-                      {filteredTrimesterData.data.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={entry.color} />
-                      ))}
-                    </Bar>
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
+              <ServiceBarChart
+                description="Distribusi ibu hamil berdasarkan trimester"
+                unit="ibu hamil"
+                minWidth={320}
+                data={[{ name: 'Usia kehamilan', ...Object.fromEntries(filteredTrimesterData.data.map((item, index) => [`trimester_${index}`, item.count])) }]}
+                series={filteredTrimesterData.data.map((item, index) => ({ key: `trimester_${index}`, label: item.name }))}
+              />
             ) : (
               <div className="h-56 flex flex-col items-center justify-center text-center p-6 border-2 border-dashed border-slate-200 rounded-2xl">
                 <Heart className="w-8 h-8 text-slate-300 mb-2" />
@@ -1190,7 +990,7 @@ export default function Dashboard({
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
               <div>
                 <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Detail Status Pertumbuhan</span>
-                <h3 className="text-lg font-extrabold text-slate-900 flex items-center gap-2">
+                <h3 className="text-lg font-semibold text-slate-900 flex items-center gap-2">
                   <span>Kategori: {selectedCategory.fullName}</span>
                   <span className="px-2.5 py-0.5 rounded-full bg-brand-100 text-brand-800 text-xs font-bold">
                     {selectedCategory.children.length} Balita
@@ -1254,6 +1054,10 @@ export default function Dashboard({
           </div>
         </div>
       )}
-    </AppShell>
+    </>
   );
+}
+
+export default function Dashboard(props: DashboardProps) {
+  return <AppShell><DashboardContent {...props} /></AppShell>;
 }

@@ -94,7 +94,7 @@ export default function Input({ child, nextChildId }: InputProps) {
           {/* Header Info */}
           <div className="flex items-center justify-between border-b border-slate-100 pb-4">
             <div>
-              <h1 className="text-xl font-extrabold text-slate-900 tracking-tight">
+              <h1 className="text-xl font-semibold text-slate-900 tracking-tight">
                 {child.nama_anak}
               </h1>
               <p className="text-xs text-slate-500 mt-0.5">
@@ -106,7 +106,7 @@ export default function Input({ child, nextChildId }: InputProps) {
             {step < 4 && (
               <div className="text-right">
                 <span className="text-xs font-bold text-slate-400">Langkah</span>
-                <div className="text-xl font-black text-brand-600">0{step} <span className="text-xs font-medium text-slate-400">/ 03</span></div>
+                <div className="text-xl font-bold text-brand-600">0{step} <span className="text-xs font-medium text-slate-400">/ 03</span></div>
               </div>
             )}
           </div>
@@ -260,7 +260,7 @@ export default function Input({ child, nextChildId }: InputProps) {
                 {/* TB/U Badge */}
                 <div className={`p-5 rounded-2xl border space-y-1 text-center ${getStatusBadgeColor(nutResult.status_tbu).bg} ${getStatusBadgeColor(nutResult.status_tbu).border}`}>
                   <span className="text-xs font-semibold text-slate-600 block">Indikator Stunting (TB/U)</span>
-                  <div className={`text-2xl font-black ${getStatusBadgeColor(nutResult.status_tbu).text}`}>
+                  <div className={`text-2xl font-bold ${getStatusBadgeColor(nutResult.status_tbu).text}`}>
                     {nutResult.status_tbu}
                   </div>
                   <span className="text-[11px] text-slate-500 block">Tinggi {tinggiCm} cm pada umur {ageMonths} bln</span>
@@ -269,7 +269,7 @@ export default function Input({ child, nextChildId }: InputProps) {
                 {/* BB/U Badge */}
                 <div className={`p-5 rounded-2xl border space-y-1 text-center ${getStatusBadgeColor(nutResult.status_bbu).bg} ${getStatusBadgeColor(nutResult.status_bbu).border}`}>
                   <span className="text-xs font-semibold text-slate-600 block">Status Berat (BB/U)</span>
-                  <div className={`text-2xl font-black ${getStatusBadgeColor(nutResult.status_bbu).text}`}>
+                  <div className={`text-2xl font-bold ${getStatusBadgeColor(nutResult.status_bbu).text}`}>
                     {nutResult.status_bbu}
                   </div>
                   <span className="text-[11px] text-slate-500 block">Berat {beratKg} kg</span>
@@ -324,7 +324,7 @@ export default function Input({ child, nextChildId }: InputProps) {
               </div>
 
               <div className="space-y-1">
-                <h2 className="text-2xl font-extrabold text-slate-900">Pengukuran Berhasil Disimpan!</h2>
+                <h2 className="text-2xl font-semibold text-slate-900">Pengukuran Berhasil Disimpan!</h2>
                 <p className="text-xs sm:text-sm text-slate-600 max-w-sm mx-auto">
                   Data penimbangan {child.nama_anak} telah diperbarui di database Posyandu {child.posyandu?.nama_pos}.
                 </p>

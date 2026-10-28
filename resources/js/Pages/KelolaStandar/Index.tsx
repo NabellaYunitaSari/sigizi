@@ -149,7 +149,7 @@ export default function Index({ standards = [] }: KelolaStandarProps) {
               <Sliders className="w-4 h-4 text-brand-600" />
               <span>Kelola Master Data & Standar Posyandu</span>
             </div>
-            <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight flex items-center gap-2">
+            <h1 className="text-2xl sm:text-3xl font-semibold text-slate-900 tracking-tight flex items-center gap-2">
               <span>Pengaturan Standar Posyandu</span>
               <ShieldCheck className="w-6 h-6 text-brand-600 inline" />
             </h1>

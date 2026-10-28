@@ -284,7 +284,7 @@ export default function Index({ initialBumilList = [], posyandus = [] }: BumilIn
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
-            <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
+            <h1 className="text-2xl sm:text-3xl font-semibold text-slate-900 tracking-tight">
               Daftar Ibu Hamil
             </h1>
             <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
@@ -315,7 +315,8 @@ export default function Index({ initialBumilList = [], posyandus = [] }: BumilIn
                 setSearch(e.target.value);
                 loadBumil(e.target.value, posyanduFilter);
               }}
-              placeholder="Cari NIK, nama ibu, atau nama suami..."
+              aria-label="Cari ibu hamil berdasarkan NIK, nama ibu, atau nama suami"
+              placeholder="Cari nama ibu, NIK, atau nama suami…"
               className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 min-h-[44px]"
             />
           </div>
@@ -323,6 +324,7 @@ export default function Index({ initialBumilList = [], posyandus = [] }: BumilIn
           {user && (user.role === 'koordinator' || user.role === 'admin') && (
             <div className="w-full md:w-48">
               <select
+                aria-label="Filter posyandu"
                 value={posyanduFilter}
                 onChange={(e) => {
                   setPosyanduFilter(e.target.value);
@@ -343,6 +345,7 @@ export default function Index({ initialBumilList = [], posyandus = [] }: BumilIn
           {/* Status Gizi Filter */}
           <div className="w-full md:w-52">
             <select
+              aria-label="Filter status gizi"
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
               className="w-full px-3 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 min-h-[44px] bg-white"
@@ -354,9 +357,11 @@ export default function Index({ initialBumilList = [], posyandus = [] }: BumilIn
           </div>
         </div>
 
+        <p role="status" aria-live="polite" className="text-xs text-slate-500"><span className="font-semibold text-slate-700">{filteredBumilList.length}</span> ibu hamil ditampilkan{search ? ` untuk “${search}”` : ''}</p>
+
         {/* List */}
         {filteredBumilList.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 lg:grid-cols-2 2xl:grid-cols-3 gap-4">
             {filteredBumilList.map((bumil) => {
               const lastExam = bumil.pengukuran ? bumil.pengukuran[0] : null;
               const isKek = lastExam?.status_gizi_bumil === 'KEK';
@@ -603,7 +608,7 @@ export default function Index({ initialBumilList = [], posyandus = [] }: BumilIn
               {/* Header */}
               <div className="flex items-start justify-between border-b border-slate-100 pb-4">
                 <div>
-                  <h3 className="font-extrabold text-slate-900 text-lg leading-tight">
+                  <h3 className="font-semibold text-slate-900 text-lg leading-tight">
                     Catat Pemeriksaan Ibu Hamil
                   </h3>
                   <p className="text-xs text-slate-500 mt-0.5">

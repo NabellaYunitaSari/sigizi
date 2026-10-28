@@ -7,20 +7,35 @@ use App\Models\IbuHamil;
 use App\Models\PelatihanPrePost;
 use App\Models\Posyandu;
 use DateTime;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
+use Inertia\Response;
 
 class DashboardController extends Controller
 {
-    public function index(Request $request)
+    public function index(Request $request): Response|RedirectResponse
     {
         $user = Auth::user();
         if (! $user) {
             return redirect()->route('login');
         }
 
-        $currentPosId = $user->id_pos;
+        if (in_array($user->role, ['admin', 'koordinator'], true)) {
+            return redirect()->route('dashboard.desa', $request->only('posyandu'));
+        }
+
+        return Inertia::render('Dashboard/Index', $this->posyanduDashboardData($request));
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function posyanduDashboardData(Request $request): array
+    {
+        $user = $request->user();
+        $currentPosId = $user->role === 'kader' ? $user->id_pos : $request->input('posyandu');
 
         $query = Anak::with([
             'posyandu',
@@ -30,7 +45,7 @@ class DashboardController extends Controller
             'imunisasi',
         ])->orderBy('nama_anak', 'asc');
 
-        if ($user->role === 'kader' && $currentPosId) {
+        if ($user->role === 'kader' || $currentPosId) {
             $query->where('id_pos', $currentPosId);
         }
 
@@ -215,11 +230,11 @@ class DashboardController extends Controller
         }
 
         // 4. Pregnant Women Trimester Distribution Data (Bar Chart)
-        $bumilQuery = IbuHamil::with(['pengukuran' => function ($q) {
+        $bumilQuery = IbuHamil::with(['posyandu', 'pengukuran' => function ($q) {
             $q->orderBy('tanggal_periksa', 'desc');
         }]);
 
-        if ($user->role === 'kader' && $currentPosId) {
+        if ($user->role === 'kader' || $currentPosId) {
             $bumilQuery->where('id_pos', $currentPosId);
         }
 
@@ -347,7 +362,7 @@ class DashboardController extends Controller
             }
         }
 
-        return Inertia::render('Dashboard/Index', [
+        return [
             'childrenInPos' => $childrenInPos,
             'bumilList' => $bumilList,
             'totalAnak' => $totalAnak,
@@ -362,15 +377,19 @@ class DashboardController extends Controller
             'currentMonthName' => $currentMonthName,
             'pmtAnakList' => $pmtAnakList,
             'pmtBumilList' => $pmtBumilList,
-        ]);
+        ];
     }
 
-    public function village(Request $request)
+    public function village(Request $request): Response|RedirectResponse
     {
         $user = Auth::user();
         if (! $user || ($user->role !== 'admin' && $user->role !== 'koordinator')) {
             return redirect()->route('dashboard');
         }
+
+        $request->validate([
+            'posyandu' => ['nullable', 'uuid', 'exists:posyandus,id'],
+        ]);
 
         $posyandus = Posyandu::with([
             'anak.pengukuran' => function ($q) {
@@ -506,6 +525,12 @@ class DashboardController extends Controller
         $stuntingRate = $totalVillageAnak > 0 ? (int) round(($totalVillageStunting / $totalVillageAnak) * 100) : 0;
 
         return Inertia::render('Dashboard/Desa', [
+            'posyandus' => $posyandus->map(fn (Posyandu $posyandu): array => [
+                'id' => $posyandu->id,
+                'nama_pos' => $posyandu->nama_pos,
+            ]),
+            'selectedPosyanduId' => $request->input('posyandu', ''),
+            'posyanduDashboard' => $this->posyanduDashboardData($request),
             'barChartData' => $barChartData,
             'trainingResults' => $trainingResults,
             'overallCoverage' => $overallCoverage,

@@ -91,21 +91,21 @@ export default function LupaPassword() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col justify-center items-center px-4 py-8 relative">
+    <div className="min-h-screen bg-[#f7f7f0] flex flex-col justify-center items-center px-4 py-8 relative">
       <Link
         href="/login"
         className="absolute top-6 left-6 text-xs font-semibold text-slate-500 hover:text-brand-600 flex items-center space-x-1 min-h-[44px] min-w-[44px] px-2 rounded-xl hover:bg-slate-100 transition-colors"
       >
         <ArrowLeft className="w-4 h-4" />
-        <span>Kembali ke Halaman Login</span>
+        <span>Kembali ke halaman masuk</span>
       </Link>
 
-      <div className="w-full max-w-md bg-white rounded-3xl border border-slate-200/80 shadow-xl p-6 sm:p-8 space-y-6">
+      <div className="w-full max-w-md bg-white rounded-3xl border border-slate-200 shadow-sm p-6 sm:p-8 space-y-6">
         <div className="text-center space-y-2">
-          <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-emerald-600 to-teal-400 flex items-center justify-center text-white mx-auto shadow-lg shadow-emerald-500/20">
+          <div className="w-14 h-14 rounded-2xl bg-brand-800 flex items-center justify-center text-white mx-auto ">
             <MessageSquare className="w-7 h-7" />
           </div>
-          <h1 className="text-2xl font-extrabold text-slate-900 tracking-tight">Verifikasi WhatsApp</h1>
+          <h1 className="text-2xl font-semibold text-slate-900 tracking-tight">Verifikasi WhatsApp</h1>
           <p className="text-xs text-slate-500">Pengiriman Otomatis Kode OTP Lupa Password</p>
         </div>
 

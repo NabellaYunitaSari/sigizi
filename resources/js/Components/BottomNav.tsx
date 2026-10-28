@@ -17,7 +17,7 @@ export default function BottomNav({ user: propUser }: BottomNavProps) {
   const page = usePage();
   const pageUser = (page.props as any).auth?.user as UserSession | null;
   const user = propUser || pageUser;
-  const pathname = page.url;
+  const pathname = page.url.split('?')[0];
 
   if (!user) return null;
 
@@ -25,7 +25,7 @@ export default function BottomNav({ user: propUser }: BottomNavProps) {
 
   const navItems = [
     {
-      label: isKoordinatorOrAdmin ? 'Desa' : 'Home',
+      label: 'Dashboard',
       href: isKoordinatorOrAdmin ? '/dashboard-desa' : '/dashboard',
       icon: isKoordinatorOrAdmin ? Building2 : LayoutDashboard,
     },
@@ -47,7 +47,7 @@ export default function BottomNav({ user: propUser }: BottomNavProps) {
   ];
 
   return (
-    <div className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-t border-slate-200/80 px-2 py-1.5 shadow-lg">
+    <nav aria-label="Navigasi cepat" className="app-bottom-nav md:hidden fixed bottom-0 left-0 right-0 z-40 bg-[#fffefa] border-t border-slate-200 px-2 pt-2 pb-[max(8px,env(safe-area-inset-bottom))]">
       <div className="flex items-center justify-around">
         {navItems.map((item) => {
           const Icon = item.icon;
@@ -57,6 +57,7 @@ export default function BottomNav({ user: propUser }: BottomNavProps) {
             <Link
               key={item.href}
               href={item.href}
+              aria-current={isActive ? 'page' : undefined}
               className={`flex flex-col items-center justify-center min-h-[48px] min-w-[60px] py-1 px-2 rounded-xl transition-all ${
                 isActive ? 'text-brand-600 font-bold' : 'text-slate-500 font-medium hover:text-slate-800'
               }`}
@@ -69,6 +70,6 @@ export default function BottomNav({ user: propUser }: BottomNavProps) {
           );
         })}
       </div>
-    </div>
+    </nav>
   );
 }

@@ -468,7 +468,7 @@ export default function Index({
         {/* Page Header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
-            <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
+            <h1 className="text-2xl sm:text-3xl font-semibold text-slate-900 tracking-tight">
               Daftar Anak Balita
             </h1>
             <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
@@ -497,7 +497,8 @@ export default function Index({
               type="text"
               value={search}
               onChange={handleSearchChange}
-              placeholder="Cari NIK, nama anak, atau nama ibu..."
+              aria-label="Cari balita berdasarkan NIK, nama anak, atau nama ibu"
+              placeholder="Cari nama balita, NIK, atau nama ibu…"
               className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 min-h-[44px]"
             />
           </div>
@@ -506,6 +507,7 @@ export default function Index({
           {user && (user.role === 'koordinator' || user.role === 'admin') && (
             <div className="w-full md:w-48">
               <select
+                aria-label="Filter posyandu"
                 value={posyanduFilter}
                 onChange={handlePosFilterChange}
                 className="w-full px-3 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 min-h-[44px] bg-white"
@@ -523,6 +525,7 @@ export default function Index({
           {/* Nutrition Status Filter */}
           <div className="w-full md:w-52">
             <select
+              aria-label="Filter status gizi"
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
               className="w-full px-3 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 min-h-[44px] bg-white"
@@ -535,9 +538,11 @@ export default function Index({
           </div>
         </div>
 
+        <p role="status" aria-live="polite" className="text-xs text-slate-500"><span className="font-semibold text-slate-700">{filteredChildren.length}</span> balita ditampilkan{search ? ` untuk “${search}”` : ''}</p>
+
         {/* Children Grid / List */}
         {filteredChildren.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 lg:grid-cols-2 2xl:grid-cols-3 gap-4">
             {filteredChildren.map((child) => {
               const ageM = calculateAgeInMonths(child.tanggal_lahir, new Date());
               const lastNut = child.pengukuran ? child.pengukuran[0] : null;
@@ -832,7 +837,7 @@ export default function Index({
               {/* Header */}
               <div className="flex items-start justify-between border-b border-slate-100 pb-4">
                 <div>
-                  <h3 className="font-extrabold text-slate-900 text-lg leading-tight">
+                  <h3 className="font-semibold text-slate-900 text-lg leading-tight">
                     Catat Pelayanan Posyandu
                   </h3>
                   <p className="text-xs text-slate-500 mt-0.5">
@@ -972,14 +977,14 @@ export default function Index({
                     setServiceTab('pengukuran');
                     setServiceError('');
                   }}
-                  className={`py-2 px-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center space-x-1.5 min-h-[42px] ${
+                  className={`py-2 px-1.5 rounded-lg text-[11px] sm:text-xs font-semibold transition-colors flex items-center justify-center gap-1.5 min-h-[44px] ${
                     serviceTab === 'pengukuran'
                       ? 'bg-white text-brand-700 shadow-sm'
                       : 'text-slate-600 hover:text-slate-900 hover:bg-white/50'
                   }`}
                 >
-                  <Scale className="w-3.5 h-3.5" />
-                  <span className="truncate">Pengukuran</span>
+                  <Scale className="hidden h-3.5 w-3.5 shrink-0 sm:block" />
+                  <span>Pengukuran</span>
                 </button>
                 <button
                   type="button"
@@ -987,14 +992,14 @@ export default function Index({
                     setServiceTab('imunisasi');
                     setServiceError('');
                   }}
-                  className={`py-2 px-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center space-x-1.5 min-h-[42px] ${
+                  className={`py-2 px-1.5 rounded-lg text-[11px] sm:text-xs font-semibold transition-colors flex items-center justify-center gap-1.5 min-h-[44px] ${
                     serviceTab === 'imunisasi'
                       ? 'bg-white text-indigo-700 shadow-sm'
                       : 'text-slate-600 hover:text-slate-900 hover:bg-white/50'
                   }`}
                 >
-                  <Syringe className="w-3.5 h-3.5" />
-                  <span className="truncate">Imunisasi</span>
+                  <Syringe className="hidden h-3.5 w-3.5 shrink-0 sm:block" />
+                  <span>Imunisasi</span>
                 </button>
                 <button
                   type="button"
@@ -1002,14 +1007,14 @@ export default function Index({
                     setServiceTab('vitamin');
                     setServiceError('');
                   }}
-                  className={`py-2 px-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center space-x-1.5 min-h-[42px] ${
+                  className={`py-2 px-1.5 rounded-lg text-[11px] sm:text-xs font-semibold transition-colors flex items-center justify-center gap-1.5 min-h-[44px] ${
                     serviceTab === 'vitamin'
                       ? 'bg-white text-amber-700 shadow-sm'
                       : 'text-slate-600 hover:text-slate-900 hover:bg-white/50'
                   }`}
                 >
-                  <Pill className="w-3.5 h-3.5" />
-                  <span className="truncate">Vitamin A</span>
+                  <Pill className="hidden h-3.5 w-3.5 shrink-0 sm:block" />
+                  <span>Vitamin A</span>
                 </button>
               </div>
 
@@ -1149,21 +1154,21 @@ export default function Index({
                         <div className="grid grid-cols-3 gap-2 pt-1">
                           <div className={`p-2 rounded-xl border text-center ${badgeTbuPreview?.bg} ${badgeTbuPreview?.border}`}>
                             <span className="text-[10px] text-slate-500 block uppercase font-medium">TB / U (Stunting)</span>
-                            <span className={`text-xs font-extrabold ${badgeTbuPreview?.text}`}>
+                            <span className={`text-xs font-semibold ${badgeTbuPreview?.text}`}>
                               {nutPreview.status_tbu}
                             </span>
                           </div>
 
                           <div className={`p-2 rounded-xl border text-center ${badgeBbuPreview?.bg} ${badgeBbuPreview?.border}`}>
                             <span className="text-[10px] text-slate-500 block uppercase font-medium">BB / U (Gizi)</span>
-                            <span className={`text-xs font-extrabold ${badgeBbuPreview?.text}`}>
+                            <span className={`text-xs font-semibold ${badgeBbuPreview?.text}`}>
                               {nutPreview.status_bbu}
                             </span>
                           </div>
 
                           <div className={`p-2 rounded-xl border text-center ${badgeBbtbPreview?.bg} ${badgeBbtbPreview?.border}`}>
                             <span className="text-[10px] text-slate-500 block uppercase font-medium">BB / TB (Wasting)</span>
-                            <span className={`text-xs font-extrabold ${badgeBbtbPreview?.text}`}>
+                            <span className={`text-xs font-semibold ${badgeBbtbPreview?.text}`}>
                               {nutPreview.status_bbtb}
                             </span>
                           </div>

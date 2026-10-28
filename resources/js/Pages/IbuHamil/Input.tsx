@@ -83,7 +83,7 @@ export default function Input({ bumil }: BumilInputProps) {
 
         <div className="bg-white rounded-3xl border border-slate-200/80 shadow-xl p-6 sm:p-8 space-y-6">
           <div className="border-b border-slate-100 pb-4">
-            <h1 className="text-xl font-extrabold text-slate-900 tracking-tight">
+            <h1 className="text-xl font-semibold text-slate-900 tracking-tight">
               {bumil.nama}
             </h1>
             <p className="text-xs text-slate-500 mt-0.5">
@@ -186,7 +186,7 @@ export default function Input({ bumil }: BumilInputProps) {
               <div className={`p-4 rounded-2xl border flex items-center justify-between ${getStatusBadgeColor(currentStatusKek).bg} ${getStatusBadgeColor(currentStatusKek).border}`}>
                 <div>
                   <span className="text-xs text-slate-600 block">Klasifikasi Status KEK Ibu Hamil:</span>
-                  <div className={`text-lg font-black ${getStatusBadgeColor(currentStatusKek).text}`}>
+                  <div className={`text-lg font-bold ${getStatusBadgeColor(currentStatusKek).text}`}>
                     {currentStatusKek === 'KEK' ? 'Bumil KEK (Risiko Kurang Energi Kronis)' : 'Status Gizi Normal'}
                   </div>
                 </div>

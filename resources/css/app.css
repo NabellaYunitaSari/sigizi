@@ -2,7 +2,52 @@
 @tailwind components;
 @tailwind utilities;
 
-body {
-  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
-  -webkit-tap-highlight-color: transparent;
+@layer base {
+  :root { color-scheme: light; }
+  body {
+    @apply text-slate-800 antialiased;
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    background: #f5f5ef;
+    -webkit-tap-highlight-color: transparent;
+  }
+  ::selection { background: #deead9; color: #213827; }
+  :focus-visible { outline: 3px solid #7a9e71; outline-offset: 3px; }
+  button, a, input, select, textarea { touch-action: manipulation; }
+  button:not(:disabled), select { cursor: pointer; }
+  button:disabled { cursor: wait; }
+  input, select, textarea { accent-color: #395636; }
+}
+
+@layer components {
+  .eyebrow { @apply text-[11px] font-semibold uppercase tracking-[0.18em] text-brand-700; }
+  .editorial-title { font-family: Georgia, 'Times New Roman', serif; font-weight: 400; letter-spacing: -0.045em; }
+  .primary-action { @apply inline-flex min-h-[48px] items-center justify-center gap-2 rounded-xl bg-brand-800 px-5 py-3 text-sm font-semibold text-white transition-colors hover:bg-brand-900 disabled:opacity-60; }
+  .secondary-action { @apply inline-flex min-h-[48px] items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-700 transition-colors hover:border-brand-300 hover:bg-brand-50; }
+  .app-sidebar { position: sticky; top: 76px; align-self: flex-start; height: calc(100dvh - 76px); overflow-y: auto; background: #fffefa; }
+  .app-content h1 { @apply font-semibold; letter-spacing: -0.035em; }
+  .app-content h1 + p { @apply mt-2 leading-relaxed; }
+  .app-content :is(input:not([type='checkbox']):not([type='radio']), select, textarea) { border-color: #dcded5; background-color: #fffefa; }
+  .app-content :is(input, select, textarea):focus { border-color: #7a9e71; --tw-ring-color: #c1d7b9; }
+  .app-content input::placeholder, .auth-input::placeholder { color: #8b9289; }
+  .app-content table { @apply w-full text-sm; border-collapse: collapse; }
+  .app-content thead { background-color: #f4f5ef; }
+  .app-content th { @apply py-3.5 font-semibold; color: #66715f; font-size: 11px; letter-spacing: 0.025em; }
+  .app-content td { @apply py-4; }
+  .app-content tbody tr { border-color: #eef0e9; transition: background-color 150ms ease; }
+  .app-content tbody tr:hover { background-color: #f9faf5; }
+  .app-content .shadow-sm { box-shadow: 0 2px 3px -2px rgb(37 55 31 / 0.07); }
+  .app-content .shadow-md { box-shadow: 0 3px 8px -5px rgb(37 55 31 / 0.15); }
+  .app-content .border-slate-200\/80 { border-color: #e0e3d9; }
+  .auth-input { @apply min-h-[50px] w-full rounded-xl border border-slate-200 bg-[#fffefa] px-4 py-3 text-sm text-slate-800 outline-none transition focus:border-brand-400 focus:ring-4 focus:ring-brand-100; }
+  .page-welcome { @apply flex flex-col justify-between gap-5 rounded-2xl border border-brand-200 bg-[#e9efdf] p-6 sm:flex-row sm:items-center; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { scroll-behavior: auto !important; animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }
+}
+
+@media print {
+  .app-navbar, .app-sidebar, .app-bottom-nav, .navigation-dialog { display: none !important; }
+  .app-shell, body { background: white; }
+  .app-content { max-width: none; padding: 0; }
 }

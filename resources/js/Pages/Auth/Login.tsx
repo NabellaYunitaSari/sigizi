@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, router } from '@inertiajs/react';
-import { HeartPulse, Lock, Phone, LogIn, ArrowLeft, AlertCircle, Sparkles, KeyRound, Eye, EyeOff } from 'lucide-react';
+import { HeartPulse, ArrowRight, ArrowLeft, AlertCircle, Eye, EyeOff, Sprout, Check } from 'lucide-react';
 
 export default function Login() {
   const [username, setUsername] = useState('');
@@ -50,142 +50,48 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col justify-center items-center px-4 py-8 relative">
-      <Link
-        href="/"
-        className="absolute top-6 left-6 text-xs font-semibold text-slate-500 hover:text-brand-600 flex items-center space-x-1 min-h-[44px] min-w-[44px] px-2 rounded-xl hover:bg-slate-100 transition-colors"
-      >
-        <ArrowLeft className="w-4 h-4" />
-        <span>Kembali ke Beranda</span>
-      </Link>
-
-      <div className="w-full max-w-md bg-white rounded-3xl border border-slate-200/80 shadow-xl shadow-slate-200/50 p-6 sm:p-8 space-y-6">
-        {/* Brand Header */}
-        <div className="text-center space-y-2">
-          <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-brand-600 to-teal-400 flex items-center justify-center text-white mx-auto shadow-lg shadow-brand-500/20">
-            <HeartPulse className="w-8 h-8" />
-          </div>
-          <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Masuk Sistem SIGIZI</h1>
-          <p className="text-xs text-slate-500">Pencatatan Posyandu Desa Sukomalo</p>
+    <div className="grid min-h-screen bg-[#f7f7f0] lg:grid-cols-2">
+      <aside className="relative hidden flex-col justify-between overflow-hidden bg-brand-900 p-12 text-white lg:flex xl:p-16">
+        <Link href="/" className="inline-flex w-fit items-center gap-3"><HeartPulse className="h-8 w-8 text-brand-200" strokeWidth={1.5} /><span className="text-2xl font-bold tracking-[-0.06em]">sigizi<span className="text-[#dfb67c]">.</span></span></Link>
+        <div className="relative z-10 max-w-lg py-16">
+          <span className="mb-8 inline-flex items-center gap-2 rounded-full border border-brand-600 px-3 py-2 text-xs text-brand-200"><Sprout className="h-4 w-4" />Ruang kerja kader posyandu</span>
+          <h1 className="editorial-title text-5xl leading-[1.15] xl:text-6xl">Pendataan terintegrasi,<br /><span className="text-[#c7d7ac]">pelayanan lebih terarah.</span></h1>
+          <p className="mt-7 max-w-sm text-base leading-8 text-brand-200">Sistem pencatatan pelayanan posyandu untuk mendukung pemantauan gizi balita dan kesehatan ibu hamil di Desa Sukomalo.</p>
+          <div className="mt-10 flex flex-col gap-4 border-t border-brand-700 pt-7 text-sm text-brand-100">{['Riwayat pelayanan dalam satu tempat', 'Pencatatan yang mudah dari ponsel', 'Rekap lebih rapi, pendampingan lebih dekat'].map(text => <p key={text} className="flex items-center gap-3"><Check className="h-4 w-4 text-[#d9bd81]" />{text}</p>)}</div>
         </div>
-
-        {error && (
-          <div className="bg-rose-50 border border-rose-200 text-rose-700 p-3.5 rounded-2xl text-xs flex items-center space-x-2">
-            <AlertCircle className="w-4 h-4 shrink-0 text-rose-600" />
-            <span>{error}</span>
+        <p className="relative z-10 text-xs text-brand-300">SIGIZI · Posyandu Desa Sukomalo</p>
+        <div aria-hidden="true" className="pointer-events-none absolute -bottom-40 -right-40 h-[500px] w-[500px] rounded-full border-[65px] border-brand-800" />
+      </aside>
+      <main className="flex flex-col px-6 py-7 sm:px-12 lg:px-16">
+        <Link href="/" className="inline-flex min-h-[44px] w-fit items-center gap-2 text-sm text-slate-500 hover:text-brand-800"><ArrowLeft className="h-4 w-4" />Kembali ke beranda</Link>
+        <div className="mx-auto flex w-full max-w-sm flex-1 flex-col justify-center py-12">
+          <div className="mb-9">
+            <span className="mb-6 inline-flex h-12 w-12 items-center justify-center rounded-xl bg-brand-800 text-white lg:hidden"><HeartPulse className="h-7 w-7" /></span>
+            <p className="eyebrow mb-3">Selamat datang kembali</p>
+            <h2 className="editorial-title text-4xl text-brand-900">Masuk ke SIGIZI</h2>
+            <p className="mt-4 text-sm leading-6 text-slate-500">Masuk menggunakan akun yang sudah terdaftar.</p>
           </div>
-        )}
-
-        {/* Login Form */}
-        <form onSubmit={handleLogin} className="space-y-4">
-          <div>
-            <label className="block text-xs font-semibold text-slate-700 mb-1.5">Nomor HP / Username *</label>
-            <div className="relative">
-              <Phone className="w-5 h-5 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
-              <input
-                type="text"
-                required
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                placeholder="Contoh: 081200000003"
-                className="w-full pl-11 pr-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-brand-500 text-sm bg-slate-50/50 min-h-[44px]"
-              />
+          {error && <div role="alert" className="mb-5 flex items-start gap-2.5 rounded-xl border border-rose-200 bg-rose-50 p-3.5 text-sm leading-relaxed text-rose-700"><AlertCircle className="mt-0.5 h-4 w-4 shrink-0" /><span>{error}</span></div>}
+          <form onSubmit={handleLogin} className="space-y-5">
+            <div><label htmlFor="username" className="mb-2 block text-sm font-medium text-slate-700">Nomor HP atau username</label><input id="username" name="username" autoComplete="username" autoCapitalize="none" spellCheck={false} type="text" required value={username} onChange={e => setUsername(e.target.value)} placeholder="Masukkan nomor HP atau username" className="auth-input" /></div>
+            <div>
+              <div className="mb-2 flex items-center justify-between gap-2"><label htmlFor="password" className="text-sm font-medium text-slate-700">Kata sandi</label><Link href="/lupa-password" className="py-1 text-xs font-semibold text-brand-700 hover:underline">Lupa kata sandi?</Link></div>
+              <div className="relative"><input id="password" name="password" autoComplete="current-password" type={showPassword ? 'text' : 'password'} required value={password} onChange={e => setPassword(e.target.value)} placeholder="Masukkan kata sandi" className="auth-input pr-14" /><button type="button" onClick={() => setShowPassword(!showPassword)} aria-label={showPassword ? 'Sembunyikan kata sandi' : 'Tampilkan kata sandi'} aria-pressed={showPassword} className="absolute right-1 top-1 flex h-11 w-11 items-center justify-center rounded-lg text-slate-400 hover:text-brand-700">{showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}</button></div>
             </div>
-          </div>
-
-          <div>
-            <div className="flex items-center justify-between mb-1.5">
-              <label className="block text-xs font-semibold text-slate-700">Kata Sandi *</label>
-              <Link href="/lupa-password" className="text-xs font-semibold text-brand-600 hover:underline flex items-center gap-1">
-                <KeyRound className="w-3.5 h-3.5" />
-                <span>Lupa Password?</span>
-              </Link>
-            </div>
-            <div className="relative">
-              <Lock className="w-5 h-5 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
-              <input
-                type={showPassword ? 'text' : 'password'}
-                required
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="••••••••"
-                className="w-full pl-11 pr-11 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-brand-500 text-sm bg-slate-50/50 min-h-[44px]"
-              />
-              <button
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 focus:outline-none p-1 rounded-lg"
-                title={showPassword ? 'Sembunyikan Kata Sandi' : 'Tampilkan Kata Sandi'}
-              >
-                {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-              </button>
-            </div>
-            <div className="mt-2 flex items-center">
-              <label className="flex items-center gap-2 cursor-pointer select-none text-xs text-slate-600 hover:text-slate-900">
-                <input
-                  type="checkbox"
-                  checked={showPassword}
-                  onChange={(e) => setShowPassword(e.target.checked)}
-                  className="w-4 h-4 rounded border-slate-300 text-brand-600 focus:ring-brand-500 cursor-pointer"
-                />
-                <span>Tampilkan kata sandi</span>
-              </label>
-            </div>
-          </div>
-
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full py-3.5 bg-brand-600 hover:bg-brand-700 text-white font-semibold rounded-xl text-sm transition-all shadow-md shadow-brand-600/20 flex items-center justify-center space-x-2 min-h-[48px] disabled:opacity-60"
-          >
-            {loading ? (
-              <span>Memproses...</span>
-            ) : (
-              <>
-                <LogIn className="w-4 h-4" />
-                <span>Masuk Sekarang</span>
-              </>
-            )}
-          </button>
-        </form>
-
-        {/* Quick Demo Accounts */}
-        <div className="pt-4 border-t border-slate-100 space-y-2.5">
-          <div className="flex items-center space-x-1 text-[11px] font-semibold text-slate-500 uppercase tracking-wider">
-            <Sparkles className="w-3.5 h-3.5 text-brand-600" />
-            <span>Uji Coba Cepat via No HP (Demo)</span>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-            <button
-              type="button"
-              onClick={() => quickFill('081200000003', 'kader123')}
-              className="p-2.5 rounded-xl border border-slate-200 hover:border-brand-500 bg-slate-50 hover:bg-brand-50/50 text-left transition-all text-xs min-h-[44px]"
-            >
-              <div className="font-bold text-slate-800">Kader Anggrek</div>
-              <div className="text-[10px] text-slate-500">081200000003</div>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => quickFill('081200000002', 'koordinator123')}
-              className="p-2.5 rounded-xl border border-slate-200 hover:border-brand-500 bg-slate-50 hover:bg-brand-50/50 text-left transition-all text-xs min-h-[44px]"
-            >
-              <div className="font-bold text-slate-800">Koordinator</div>
-              <div className="text-[10px] text-slate-500">081200000002</div>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => quickFill('081200000001', 'admin123')}
-              className="p-2.5 rounded-xl border border-slate-200 hover:border-brand-500 bg-slate-50 hover:bg-brand-50/50 text-left transition-all text-xs min-h-[44px]"
-            >
-              <div className="font-bold text-slate-800">Admin Utama</div>
-              <div className="text-[10px] text-slate-500">081200000001</div>
-            </button>
-          </div>
+            <button type="submit" disabled={loading} className="primary-action w-full">{loading ? 'Sedang masuk…' : 'Masuk ke akun'}{!loading && <ArrowRight className="h-4 w-4" />}</button>
+          </form>
+          <p className="mt-5 text-center text-xs leading-6 text-slate-500">Belum memiliki akun? Hubungi koordinator desa<br />untuk mendapatkan akses SIGIZI.</p>
+          <details className="mt-8 border-t border-slate-200 pt-4">
+            <summary className="cursor-pointer py-2 text-xs font-medium text-slate-500">Coba dengan akun demo</summary>
+            <div className="mt-3 grid grid-cols-3 gap-2">{[
+              { label: 'Kader', phone: '081200000003', password: 'kader123' },
+              { label: 'Koordinator', phone: '081200000002', password: 'koordinator123' },
+              { label: 'Admin', phone: '081200000001', password: 'admin123' },
+            ].map(account => <button type="button" key={account.label} onClick={() => { quickFill(account.phone, account.password); document.getElementById('username')?.focus(); }} className="min-h-[44px] rounded-lg border border-slate-200 bg-white px-2 py-3 text-xs font-medium text-slate-600 hover:border-brand-300 hover:bg-brand-50">{account.label}</button>)}</div>
+          </details>
         </div>
-      </div>
+        <p className="text-center text-[11px] text-slate-400">SIGIZI - Posyandu Desa Sukomalo</p>
+      </main>
     </div>
   );
 }

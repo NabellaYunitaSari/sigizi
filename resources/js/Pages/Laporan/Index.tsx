@@ -90,7 +90,7 @@ export default function Index({ posyandus = [], children = [], bumilList = [] }:
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
-            <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
+            <h1 className="text-2xl sm:text-3xl font-semibold text-slate-900 tracking-tight">
               Laporan & Rekapitulasi Data
             </h1>
             <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
@@ -109,7 +109,7 @@ export default function Index({ posyandus = [], children = [], bumilList = [] }:
 
             <button
               onClick={handleExportExcel}
-              className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs rounded-xl transition-all shadow-md shadow-emerald-600/20 min-h-[44px] flex items-center space-x-1.5"
+              className="px-4 py-2.5 bg-brand-800 hover:bg-brand-900 text-white font-semibold text-xs rounded-xl transition-colors shadow-sm min-h-[44px] flex items-center space-x-1.5"
             >
               <Download className="w-4 h-4" />
               <span>Export Excel</span>
